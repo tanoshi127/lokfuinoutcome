@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭收支平衡及財務管理系統 - 樂富雲端協作版</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Chart.js 用於數據視覺化 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 FontAwesome 圖標 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts (Noto Sans TC) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white !important; }
+            .shadow-sm, .shadow-md { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- 頂部導航欄 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-sm">
+                    <i class="fa-solid fa-house-chimney-crack text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base sm:text-xl font-bold text-slate-900 tracking-tight">家庭收支平衡系統</h1>
+                        <!-- 雲端同步狀態指示燈 -->
+                        <span id="cloudStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                            <i class="fa-solid fa-spinner fa-spin mr-1"></i> 連線雲端中...
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 hidden sm:block">跨裝置即時同步 • 家庭成員共同記帳版</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 sm:space-x-3 no-print">
+                <!-- 家庭共享帳本設定按鈕 -->
+                <button onclick="openFamilyModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm">
+                    <i class="fa-solid fa-users"></i>
+                    <span id="currentFamilyDisplay">樂富家庭帳本</span>
+                </button>
+
+                <!-- 月份選擇器 -->
+                <div class="relative">
+                    <input type="month" id="monthSelector" value="2026-11" 
+                        class="bg-slate-100 border border-slate-300 text-slate-700 text-xs sm:text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block px-2.5 py-1.5 font-bold cursor-pointer">
+                </div>
+                
+                <!-- 匯出 CSV 按鈕 -->
+                <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm" title="匯出 Excel">
+                    <i class="fa-solid fa-file-csv"></i>
+                    <span class="hidden lg:inline">匯出 CSV</span>
+                </button>
+
+                <!-- 列印報表按鈕 -->
+                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm" title="列印報表">
+                    <i class="fa-solid fa-print"></i>
+                    <span class="hidden lg:inline">列印</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- 新月份快速建立提示橫幅 (當切換到空白月份時顯示) -->
+        <div id="emptyMonthBanner" class="hidden bg-gradient-to-r from-brand-600 to-indigo-600 rounded-2xl p-5 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-regular fa-calendar-plus"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base">此月份 (<span id="emptyMonthLabel"></span>) 尚未有雲端帳目記錄</h3>
+                    <p class="text-xs text-brand-100 mt-0.5">您可以直接從左側新增項目，或一鍵匯入「樂富家庭預設固定開支範本」快速開始！</p>
+                </div>
+            </div>
+            <button onclick="loadTemplateForCurrentMonth()" class="bg-white text-brand-700 hover:bg-brand-50 font-bold text-sm px-4 py-2.5 rounded-xl shadow-sm transition whitespace-nowrap">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> 一鍵載入預設範本
+            </button>
+        </div>
+
+        <!-- 頂部 KPI 數據卡片區 -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- 總收入 -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">本月總收入</p>
+                    <h2 id="kpiIncome" class="text-2xl font-bold text-emerald-600 mt-1">$0</h2>
+                    <p class="text-xs text-slate-400 mt-1">家庭成員總入息</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+            </div>
+
+            <!-- 總支出 -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">本月總支出</p>
+                    <h2 id="kpiExpense" class="text-2xl font-bold text-rose-600 mt-1">$0</h2>
+                    <p id="kpiCreditRatio" class="text-xs text-slate-400 mt-1">信用卡還款佔比: 0%</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+            </div>
+
+            <!-- 本月結餘 -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">本月淨結餘 (現金流)</p>
+                    <h2 id="kpiBalance" class="text-2xl font-bold text-slate-900 mt-1">$0</h2>
+                    <p id="kpiStatusText" class="text-xs font-medium mt-1">財務狀況計算中...</p>
+                </div>
+                <div id="kpiBalanceIconBg" class="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+            </div>
+
+            <!-- 儲蓄率 / 財務健康度 -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">本月儲蓄率</p>
+                    <h2 id="kpiSavingsRate" class="text-2xl font-bold text-brand-600 mt-1">0%</h2>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
+                        <div id="savingsProgressBar" class="bg-brand-600 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-piggy-bank"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- 中間區域：快速新增表單 + 視覺化圖表 -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- 左側：新增收支項目表單 (佔 5 欄) -->
+            <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm no-print flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center">
+                            <i class="fa-solid fa-circle-plus text-brand-600 mr-2"></i>
+                            新增收支項目 (雲端即時同步)
+                        </h3>
+                    </div>
+
+                    <form id="transactionForm" class="space-y-3.5">
+                        <!-- 收支類型切換 -->
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="txType" value="expense" class="peer sr-only" checked onchange="updateCategoryOptions()">
+                                <div class="text-center py-2 text-sm font-bold rounded-lg text-slate-600 peer-checked:bg-white peer-checked:text-rose-600 peer-checked:shadow-sm transition">
+                                    <i class="fa-solid fa-minus-circle mr-1"></i> 支出項目
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="txType" value="income" class="peer sr-only" onchange="updateCategoryOptions()">
+                                <div class="text-center py-2 text-sm font-bold rounded-lg text-slate-600 peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm transition">
+                                    <i class="fa-solid fa-plus-circle mr-1"></i> 收入項目
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- 項目分類 與 記帳成員 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                            <div class="sm:col-span-7">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">財務分類</label>
+                                <select id="txCategory" required class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5">
+                                    <!-- 動態載入選項 -->
+                                </select>
+                            </div>
+                            <div class="sm:col-span-5">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">記帳成員</label>
+                                <select id="txMember" class="w-full bg-indigo-50/60 border border-indigo-200 text-indigo-900 font-medium text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                                    <option value="戶主">👨 戶主 / 爸爸</option>
+                                    <option value="太太">👩 太太 / 媽媽</option>
+                                    <option value="家庭共同">🏠 家庭共同</option>
+                                    <option value="其他成員">🧑 其他成員</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 項目名稱與金額 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">項目名稱</label>
+                                <input type="text" id="txName" required placeholder="例如：水費、滙豐卡數..." 
+                                    class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">金額 (HKD $)</label>
+                                <input type="number" id="txAmount" required min="0" step="0.1" placeholder="0.00" 
+                                    class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5 font-mono">
+                            </div>
+                        </div>
+
+                        <!-- 備註 / 狀態 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">備註 (選填)</label>
+                                <input type="text" id="txNote" placeholder="例如：自動轉帳、街市買餸..." 
+                                    class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">繳費狀態</label>
+                                <select id="txPaid" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5">
+                                    <option value="true">✅ 已入帳 / 已繳付</option>
+                                    <option value="false">⏳ 待繳付 / 預算中</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="submitTxBtn" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition duration-200 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>儲存至雲端帳本</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 專業理財小貼士 -->
+                <div class="mt-4 p-3.5 bg-brand-50 border border-brand-100 rounded-xl text-xs text-brand-900 flex items-start space-x-2.5">
+                    <i class="fa-solid fa-lightbulb text-brand-600 text-base mt-0.5"></i>
+                    <div>
+                        <span class="font-bold">專業理財建議：</span>
+                        <span id="financialAdvice">系統正根據您的雲端帳目進行財務健康分析...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：數據視覺化圖表區 (佔 7 欄) -->
+            <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center">
+                            <i class="fa-solid fa-chart-pie text-brand-600 mr-2"></i>
+                            支出結構與成員貢獻分析
+                        </h3>
+                        <p class="text-xs text-slate-500">即時統計固定開支、信用卡還款與各成員記帳分佈</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-center">
+                    <!-- 圓餅圖：支出分類佔比 -->
+                    <div class="relative h-60 w-full flex flex-col items-center justify-center">
+                        <canvas id="expenseDoughnutChart"></canvas>
+                    </div>
+                    
+                    <!-- 長條圖：各類金額對比 -->
+                    <div class="relative h-60 w-full flex flex-col items-center justify-center">
+                        <canvas id="categoryBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 底部：結構化專業明細報表區 -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <!-- 報表標題與篩選列 -->
+            <div class="p-5 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50">
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h3 class="text-lg font-bold text-slate-900">雲端家庭收支明細報表</h3>
+                        <span id="reportMonthBadge" class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-brand-100 text-brand-800">2026-11</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">所有更改將自動同步至同帳本的家庭成員裝置</p>
+                </div>
+
+                <!-- 分類與成員篩選控制列 -->
+                <div class="flex flex-wrap items-center gap-2 no-print">
+                    <!-- 成員篩選下拉選單 -->
+                    <select id="memberFilterSelect" onchange="renderTable()" class="bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:ring-brand-500">
+                        <option value="all">👥 所有家庭成員</option>
+                        <option value="戶主">👨 戶主 / 爸爸</option>
+                        <option value="太太">👩 太太 / 媽媽</option>
+                        <option value="家庭共同">🏠 家庭共同</option>
+                        <option value="其他成員">🧑 其他成員</option>
+                    </select>
+
+                    <!-- 分類篩選按鈕組 -->
+                    <div class="flex flex-wrap gap-1" id="filterButtons">
+                        <button onclick="setFilter('all')" data-filter="all" class="filter-btn active px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white transition">全部</button>
+                        <button onclick="setFilter('income')" data-filter="income" class="filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">收入</button>
+                        <button onclick="setFilter('fixed')" data-filter="fixed" class="filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">固定開支</button>
+                        <button onclick="setFilter('credit')" data-filter="credit" class="filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">信用卡</button>
+                        <button onclick="setFilter('extra')" data-filter="extra" class="filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">生活額外</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 響應式表格 -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100/80 text-slate-600 text-xs uppercase tracking-wider border-b border-slate-200">
+                            <th class="py-3.5 px-4 font-bold">類別標籤</th>
+                            <th class="py-3.5 px-4 font-bold">記帳成員</th>
+                            <th class="py-3.5 px-4 font-bold">項目名稱</th>
+                            <th class="py-3.5 px-4 font-bold">備註說明</th>
+                            <th class="py-3.5 px-4 font-bold text-center">繳費狀態</th>
+                            <th class="py-3.5 px-4 font-bold text-right">金額 (HKD)</th>
+                            <th class="py-3.5 px-4 font-bold text-center no-print">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- 動態生成報表列 -->
+                    </tbody>
+                    <tfoot class="bg-slate-50 border-t-2 border-slate-200 font-bold text-slate-900">
+                        <tr>
+                            <td colspan="5" class="py-4 px-4 text-right text-sm">當前篩選列表小計：</td>
+                            <td id="tableSubtotal" class="py-4 px-4 text-right text-base font-mono text-brand-700">$0.00</td>
+                            <td class="no-print"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 自定義提示訊息框 -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center space-x-2.5 text-sm font-medium">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage">操作成功</span>
+    </div>
+
+    <!-- 家庭共享帳本設定模態視窗 (Family Sync Modal) -->
+    <div id="familyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900">家庭成員共同記帳設定</h3>
+                </div>
+                <button onclick="closeFamilyModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4 text-sm">
+                <p class="text-slate-600 text-xs leading-relaxed">
+                    只要家人的手機或電腦輸入相同的<strong>「家庭帳本代碼」</strong>，即可跨裝置即時查看及共同編輯每月的家庭收支報表！
+                </p>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">目前連接的家庭帳本代碼 (可自訂英數字)</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="familyIdInput" placeholder="例如：LOKFU_FAMILY" 
+                            class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-mono font-bold uppercase focus:ring-indigo-500 focus:border-indigo-500">
+                        <button type="button" onclick="copyFamilyCode()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition" title="複製代碼分享給家人">
+                            <i class="fa-regular fa-copy mr-1"></i> 複製
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">您的預設記帳身份 (方便自動選取)</label>
+                    <select id="defaultMemberSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm">
+                        <option value="戶主">👨 戶主 / 爸爸</option>
+                        <option value="太太">👩 太太 / 媽媽</option>
+                        <option value="家庭共同">🏠 家庭共同</option>
+                        <option value="其他成員">🧑 其他成員</option>
+                    </select>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-500">
+                    <span class="font-bold text-slate-700">雲端連線裝置識別碼：</span>
+                    <span id="displayUserId" class="font-mono break-all">連線中...</span>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeFamilyModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">關閉</button>
+                    <button type="button" onclick="switchFamilyAccount()" class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm">
+                        切換 / 儲存帳本設定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯項目模態視窗 (Edit Modal) -->
+    <div id="editModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-slate-900">修改收支項目</h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editId">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">分類</label>
+                        <select id="editCategory" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm">
+                            <option value="income">💰 家庭收入</option>
+                            <option value="fixed">🏠 居住及固定開支</option>
+                            <option value="credit">💳 信用卡與信貸還款</option>
+                            <option value="extra">🛍️ 日常生活與額外支出</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">記帳成員</label>
+                        <select id="editMember" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm">
+                            <option value="戶主">👨 戶主 / 爸爸</option>
+                            <option value="太太">👩 太太 / 媽媽</option>
+                            <option value="家庭共同">🏠 家庭共同</option>
+                            <option value="其他成員">🧑 其他成員</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">項目名稱</label>
+                    <input type="text" id="editName" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">金額 (HKD $)</label>
+                    <input type="number" id="editAmount" required min="0" step="0.1" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">備註</label>
+                    <input type="text" id="editNote" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">取消</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700">儲存至雲端</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase 雲端資料庫與即時協作模組 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 1. 初始化 Firebase 與環境變數
+        // ==========================================
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 應用程式狀態變數
+        let currentUser = null;
+        let currentFamilyCode = 'LOKFU_FAMILY'; // 預設樂富家庭共享帳本代碼
+        let currentMonth = '2026-11';
+        let transactions = [];
+        let currentFilter = 'all';
+        let unsubscribeSnapshot = null;
+        let doughnutChart = null;
+        let barChart = null;
+        let isInitialLoadForDefaultMonth = true;
+
+        // 樂富家庭預設範本數據 (用於首次建立或新月份一鍵匯入)
+        const defaultTemplateItems = [
+            { category: 'income', member: '戶主', name: '每月主要薪金收入', amount: 45000, note: '家庭總入息', paid: true },
+            { category: 'income', member: '太太', name: '其他津貼 / 兼職收入', amount: 3500, note: '每月浮動收入', paid: true },
+            { category: 'fixed', member: '家庭共同', name: '樂富居屋/物業按揭供款', amount: 11500, note: '銀行自動轉帳', paid: true },
+            { category: 'fixed', member: '家庭共同', name: '屋苑管理費及差餉地租', amount: 1650, note: '樂富屋苑管理處', paid: true },
+            { category: 'fixed', member: '家庭共同', name: '水費、電費及煤氣費', amount: 1200, note: '每月平均預算', paid: true },
+            { category: 'fixed', member: '戶主', name: '家居寬頻及手提電話費', amount: 680, note: '電訊商月費', paid: true },
+            { category: 'fixed', member: '家庭共同', name: '家庭成員保險供款', amount: 2400, note: '醫療及人壽保障', paid: true },
+            { category: 'fixed', member: '戶主', name: '每月固定停車場月租', amount: 2800, note: '樂富停車場', paid: false },
+            { category: 'credit', member: '戶主', name: '滙豐銀行 (HSBC) 信用卡', amount: 3800, note: '日常簽帳結算', paid: true },
+            { category: 'credit', member: '太太', name: '東亞銀行 (BEA) 信用卡', amount: 2100, note: '網購及餐飲', paid: false },
+            { category: 'credit', member: '戶主', name: '美國運通 (AE) 信用卡', amount: 1950, note: '超市及百貨', paid: false },
+            { category: 'credit', member: '太太', name: '安信 (PrimeCredit) 信用卡', amount: 1500, note: '分期還款', paid: true },
+            { category: 'credit', member: '戶主', name: '花旗銀行 (Citibank) 信用卡', amount: 1200, note: '八達通自動增值', paid: true },
+            { category: 'credit', member: '太太', name: '大新銀行 (Dah Sing) 信用卡', amount: 850, note: '油費及雜項', paid: false },
+            { category: 'extra', member: '太太', name: '家庭日常買餸及家用', amount: 6000, note: '街市及超市開支', paid: true },
+            { category: 'extra', member: '戶主', name: '父母家用 / 子女零用', amount: 3000, note: '每月固定家庭支持', paid: true },
+            { category: 'extra', member: '家庭共同', name: '本月額外支出 (維修/節日)', amount: 1500, note: '家居小額維修及聚餐', paid: false }
+        ];
+
+        const categoryMeta = {
+            income: { label: '收入入息', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: 'fa-arrow-trend-up' },
+            fixed:  { label: '居住及固定開支', badgeClass: 'bg-blue-100 text-blue-800 border-blue-200', icon: 'fa-house' },
+            credit: { label: '信用卡還款', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'fa-credit-card' },
+            extra:  { label: '生活及額外支出', badgeClass: 'bg-purple-100 text-purple-800 border-purple-200', icon: 'fa-bag-shopping' }
+        };
+
+        // ==========================================
+        // 2. 身份驗證與雲端即時監聽 (Rule 1, 2, 3)
+        // ==========================================
+        async function initAuthAndCloud() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("雲端驗證失敗:", error);
+                updateCloudStatus('error', '雲端連線異常');
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('displayUserId').textContent = user.uid;
+                updateCloudStatus('connected', '雲端已即時同步');
+                subscribeToCloudTransactions();
+            }
+        });
+
+        // 監聽指定「家庭代碼」與「月份」的雲端資料
+        function subscribeToCloudTransactions() {
+            if (!currentUser) return;
+
+            if (unsubscribeSnapshot) {
+                unsubscribeSnapshot();
+            }
+
+            updateCloudStatus('syncing', '讀取雲端帳目...');
+            document.getElementById('reportMonthBadge').textContent = currentMonth;
+            document.getElementById('currentFamilyDisplay').textContent = currentFamilyCode;
+
+            // 遵循 Rule 1: 嚴格使用 /artifacts/{appId}/public/data/{collectionName}
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'family_budget_records');
+
+            // 遵循 Rule 2: 單純查詢集合，於前端記憶體內過濾 familyCode 與 month
+            unsubscribeSnapshot = onSnapshot(colRef, async (snapshot) => {
+                const allDocs = [];
+                snapshot.forEach((docSnap) => {
+                    allDocs.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // 篩選屬於目前家庭代碼與目前選擇月份的記錄
+                const filteredDocs = allDocs.filter(item => 
+                    item.familyCode === currentFamilyCode && item.month === currentMonth
+                );
+
+                // 按建立時間排序 (新到舊)
+                filteredDocs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                // 若是預設帳本且預設月份完全無資料，自動初始化樂富範例數據方便體驗
+                if (filteredDocs.length === 0 && currentFamilyCode === 'LOKFU_FAMILY' && currentMonth === '2026-11' && isInitialLoadForDefaultMonth) {
+                    isInitialLoadForDefaultMonth = false;
+                    await seedDefaultDataToCloud();
+                    return;
+                }
+
+                isInitialLoadForDefaultMonth = false;
+                transactions = filteredDocs;
+                updateCloudStatus('connected', '雲端已即時同步');
+                
+                // 控制空月份提示橫幅
+                const emptyBanner = document.getElementById('emptyMonthBanner');
+                if (transactions.length === 0) {
+                    document.getElementById('emptyMonthLabel').textContent = currentMonth;
+                    emptyBanner.classList.remove('hidden');
+                } else {
+                    emptyBanner.classList.add('hidden');
+                }
+
+                renderApp();
+            }, (error) => {
+                console.error("讀取雲端數據失敗:", error);
+                updateCloudStatus('error', '同步失敗，請重試');
+                showToast('雲端同步發生錯誤，請檢查網絡連線', 'error');
+            });
+        }
+
+        // 批次寫入預設範本到雲端
+        async function seedDefaultDataToCloud() {
+            if (!currentUser) return;
+            updateCloudStatus('syncing', '初始化雲端範本...');
+            try {
+                const batch = writeBatch(db);
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'family_budget_records');
+                const now = Date.now();
+
+                defaultTemplateItems.forEach((item, index) => {
+                    const newDocRef = doc(colRef);
+                    batch.set(newDocRef, {
+                        ...item,
+                        familyCode: currentFamilyCode,
+                        month: currentMonth,
+                        createdAt: now - index * 1000,
+                        updatedBy: currentUser.uid
+                    });
+                });
+
+                await batch.commit();
+                showToast(`已為 ${currentMonth} 載入樂富家庭範本並同步至雲端！`);
+            } catch (error) {
+                console.error("初始化範本失敗:", error);
+                showToast('寫入雲端失敗', 'error');
+            }
+        }
+
+        // ==========================================
+        // 3. 雲端 CRUD 操作函數 (掛載至 window 供 HTML 呼叫)
+        // ==========================================
+        window.loadTemplateForCurrentMonth = async function() {
+            await seedDefaultDataToCloud();
+        };
+
+        async function addTransactionToCloud() {
+            if (!currentUser) {
+                showToast('雲端尚未連線完成，請稍候', 'error');
+                return;
+            }
+
+            const category = document.getElementById('txCategory').value;
+            const member = document.getElementById('txMember').value;
+            const name = document.getElementById('txName').value.trim();
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const note = document.getElementById('txNote').value.trim() || '-';
+            const paid = document.getElementById('txPaid').value === 'true';
+
+            if (!name || isNaN(amount) || amount < 0) {
+                showToast('請輸入有效的項目名稱與金額', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitTxBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>儲存中...</span>';
+
+            try {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'family_budget_records');
+                await addDoc(colRef, {
+                    familyCode: currentFamilyCode,
+                    month: currentMonth,
+                    category,
+                    member,
+                    name,
+                    amount,
+                    note,
+                    paid,
+                    createdAt: Date.now(),
+                    updatedBy: currentUser.uid
+                });
+
+                document.getElementById('transactionForm').reset();
+                // 恢復預設選取的記帳身份
+                document.getElementById('txMember').value = document.getElementById('defaultMemberSelect').value;
+                window.updateCategoryOptions();
+                showToast(`已新增「${name}」並同步給所有家庭成員！`);
+            } catch (error) {
+                console.error("新增失敗:", error);
+                showToast('雲端儲存失敗，請重試', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>儲存至雲端帳本</span>';
+            }
+        }
+
+        window.deleteTransaction = async function(id) {
+            if (!currentUser) return;
+            const target = transactions.find(t => t.id === id);
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
+                await deleteDoc(docRef);
+                showToast(`已從雲端刪除「${target ? target.name : ''}」`, 'warning');
+            } catch (error) {
+                console.error("刪除失敗:", error);
+                showToast('刪除失敗，請重試', 'error');
+            }
+        };
+
+        window.togglePaidStatus = async function(id) {
+            if (!currentUser) return;
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
+                await updateDoc(docRef, {
+                    paid: !tx.paid,
+                    updatedBy: currentUser.uid
+                });
+                showToast(`已更新「${tx.name}」為${!tx.paid ? '已繳付' : '待繳付'}`);
+            } catch (error) {
+                console.error("更新狀態失敗:", error);
+                showToast('更新狀態失敗', 'error');
+            }
+        };
+
+        window.openEditModal = function(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            document.getElementById('editId').value = tx.id;
+            document.getElementById('editCategory').value = tx.category;
+            document.getElementById('editMember').value = tx.member || '家庭共同';
+            document.getElementById('editName').value = tx.name;
+            document.getElementById('editAmount').value = tx.amount;
+            document.getElementById('editNote').value = tx.note === '-' ? '' : tx.note;
+
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeEditModal = function() {
+            const modal = document.getElementById('editModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        async function saveEditTransactionToCloud() {
+            if (!currentUser) return;
+            const id = document.getElementById('editId').value;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
+                await updateDoc(docRef, {
+                    category: document.getElementById('editCategory').value,
+                    member: document.getElementById('editMember').value,
+                    name: document.getElementById('editName').value.trim(),
+                    amount: parseFloat(document.getElementById('editAmount').value) || 0,
+                    note: document.getElementById('editNote').value.trim() || '-',
+                    updatedBy: currentUser.uid
+                });
+                window.closeEditModal();
+                showToast('修改已即時同步至雲端！');
+            } catch (error) {
+                console.error("修改失敗:", error);
+                showToast('儲存修改失敗', 'error');
+            }
+        }
+
+        // ==========================================
+        // 4. 家庭共享帳本設定與切換邏輯
+        // ==========================================
+        window.openFamilyModal = function() {
+            document.getElementById('familyIdInput').value = currentFamilyCode;
+            const modal = document.getElementById('familyModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeFamilyModal = function() {
+            const modal = document.getElementById('familyModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.switchFamilyAccount = function() {
+            const rawCode = document.getElementById('familyIdInput').value.trim().toUpperCase();
+            if (!rawCode) {
+                showToast('請輸入有效的家庭帳本代碼', 'error');
+                return;
+            }
+            // 僅允許英數字與底線
+            const cleanCode = rawCode.replace(/[^A-Z0-9_-]/g, '');
+            if (!cleanCode) {
+                showToast('代碼請使用英文字母或數字', 'error');
+                return;
+            }
+
+            currentFamilyCode = cleanCode;
+            const defaultMember = document.getElementById('defaultMemberSelect').value;
+            document.getElementById('txMember').value = defaultMember;
+
+            window.closeFamilyModal();
+            subscribeToCloudTransactions();
+            showToast(`已切換至家庭帳本：${currentFamilyCode}`);
+        };
+
+        window.copyFamilyCode = function() {
+            const input = document.getElementById('familyIdInput');
+            input.select();
+            document.execCommand('copy');
+            showToast('已複製家庭帳本代碼，可貼上發送給家人！');
+        };
+
+        // ==========================================
+        // 5. UI 渲染、圖表更新與篩選邏輯
+        // ==========================================
+        window.updateCategoryOptions = function() {
+            const txType = document.querySelector('input[name="txType"]:checked').value;
+            const select = document.getElementById('txCategory');
+            select.innerHTML = '';
+
+            if (txType === 'income') {
+                select.innerHTML = `<option value="income">💰 家庭收入 (薪金 / 獎金 / 津貼)</option>`;
+            } else {
+                select.innerHTML = `
+                    <option value="fixed">🏠 居住及固定開支 (按揭/管理費/水電/車位)</option>
+                    <option value="credit">💳 信用卡與信貸還款 (滙豐/東亞/AE/安信等)</option>
+                    <option value="extra">🛍️ 日常生活與額外支出 (家用/餐飲/雜費)</option>
+                `;
+            }
+        };
+
+        window.setFilter = function(filterType) {
+            currentFilter = filterType;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.filter === filterType) {
+                    btn.className = 'filter-btn active px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white transition';
+                } else {
+                    btn.className = 'filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+                }
+            });
+            window.renderTable();
+        };
+
+        function formatCurrency(num) {
+            return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        function renderApp() {
+            calculateAndRenderKPIs();
+            window.renderTable();
+            updateCharts();
+        }
+
+        function calculateAndRenderKPIs() {
+            let totalIncome = 0, totalFixed = 0, totalCredit = 0, totalExtra = 0;
+
+            transactions.forEach(tx => {
+                const amt = Number(tx.amount) || 0;
+                if (tx.category === 'income') totalIncome += amt;
+                else if (tx.category === 'fixed') totalFixed += amt;
+                else if (tx.category === 'credit') totalCredit += amt;
+                else if (tx.category === 'extra') totalExtra += amt;
+            });
+
+            const totalExpense = totalFixed + totalCredit + totalExtra;
+            const netBalance = totalIncome - totalExpense;
+            const savingsRate = totalIncome > 0 ? ((netBalance / totalIncome) * 100) : 0;
+            const creditRatio = totalExpense > 0 ? ((totalCredit / totalExpense) * 100) : 0;
+
+            document.getElementById('kpiIncome').textContent = formatCurrency(totalIncome);
+            document.getElementById('kpiExpense').textContent = formatCurrency(totalExpense);
+            document.getElementById('kpiCreditRatio').textContent = `信用卡還款佔總支出: ${creditRatio.toFixed(1)}%`;
+
+            const balanceEl = document.getElementById('kpiBalance');
+            const statusTextEl = document.getElementById('kpiStatusText');
+            const balanceIconBg = document.getElementById('kpiBalanceIconBg');
+
+            balanceEl.textContent = (netBalance >= 0 ? '+' : '') + formatCurrency(netBalance);
+
+            if (netBalance > 0) {
+                balanceEl.className = 'text-2xl font-bold text-emerald-600 mt-1';
+                statusTextEl.textContent = '✅ 收支盈餘，現金流健康';
+                statusTextEl.className = 'text-xs font-medium text-emerald-600 mt-1';
+                balanceIconBg.className = 'w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl';
+            } else if (netBalance === 0) {
+                balanceEl.className = 'text-2xl font-bold text-slate-700 mt-1';
+                statusTextEl.textContent = '⚖️ 收支剛好打平';
+                statusTextEl.className = 'text-xs font-medium text-slate-500 mt-1';
+            } else {
+                balanceEl.className = 'text-2xl font-bold text-rose-600 mt-1';
+                statusTextEl.textContent = '⚠️ 出現赤字！支出大於收入';
+                statusTextEl.className = 'text-xs font-bold text-rose-600 mt-1';
+                balanceIconBg.className = 'w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl';
+            }
+
+            const clampedSavings = Math.max(0, Math.min(100, savingsRate));
+            document.getElementById('kpiSavingsRate').textContent = `${savingsRate.toFixed(1)}%`;
+            document.getElementById('savingsProgressBar').style.width = `${clampedSavings}%`;
+
+            const adviceEl = document.getElementById('financialAdvice');
+            if (transactions.length === 0) {
+                adviceEl.textContent = `本月暫無帳目記錄，新增收支後系統將自動為全家人分析財務狀況。`;
+            } else if (netBalance < 0) {
+                adviceEl.textContent = `本月預算超支 ${formatCurrency(Math.abs(netBalance))}。建議家庭成員共同檢視「信用卡還款」與「生活及額外支出」，減少非必要簽帳。`;
+            } else if (creditRatio > 30) {
+                adviceEl.textContent = `信用卡還款佔總支出高達 ${creditRatio.toFixed(1)}%（建議控制在 25% 以下），建議集中清還高息卡數或減少使用分期付款。`;
+            } else if (savingsRate >= 20) {
+                adviceEl.textContent = `表現非常優秀！本月儲蓄率達 ${savingsRate.toFixed(1)}%，建議將盈餘撥入家庭緊急備用金或穩健投資戶口。`;
+            } else {
+                adviceEl.textContent = `目前收支保持平衡，固定居住開支佔收入 ${(totalIncome > 0 ? (totalFixed/totalIncome*100).toFixed(1) : 0)}%。持續共同記帳有助進一步提升儲蓄率！`;
+            }
+        }
+
+        window.renderTable = function() {
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = '';
+
+            const memberFilter = document.getElementById('memberFilterSelect').value;
+
+            const filtered = transactions.filter(t => {
+                const matchCategory = currentFilter === 'all' || t.category === currentFilter;
+                const matchMember = memberFilter === 'all' || (t.member || '家庭共同') === memberFilter;
+                return matchCategory && matchMember;
+            });
+
+            let subtotal = 0;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-10 text-center text-slate-400">
+                            <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
+                            此篩選條件下暫無雲端記錄
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('tableSubtotal').textContent = '$0.00';
+                return;
+            }
+
+            filtered.forEach(tx => {
+                const meta = categoryMeta[tx.category] || categoryMeta.extra;
+                const isIncome = tx.category === 'income';
+                const amt = Number(tx.amount) || 0;
+                const memberName = tx.member || '家庭共同';
+                
+                if (currentFilter === 'all') {
+                    subtotal += isIncome ? amt : -amt;
+                } else {
+                    subtotal += amt;
+                }
+
+                // 成員徽章顏色區分
+                let memberBadgeStyle = 'bg-slate-100 text-slate-700';
+                if (memberName === '戶主') memberBadgeStyle = 'bg-sky-100 text-sky-800';
+                else if (memberName === '太太') memberBadgeStyle = 'bg-pink-100 text-pink-800';
+                else if (memberName === '家庭共同') memberBadgeStyle = 'bg-indigo-100 text-indigo-800';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/90 transition group';
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${meta.badgeClass}">
+                            <i class="fa-solid ${meta.icon} mr-1.5"></i>
+                            ${meta.label}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${memberBadgeStyle}">
+                            ${escapeHTML(memberName)}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 font-bold text-slate-800">
+                        ${escapeHTML(tx.name)}
+                    </td>
+                    <td class="py-3.5 px-4 text-slate-500 text-xs">
+                        ${escapeHTML(tx.note || '-')}
+                    </td>
+                    <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                        <button onclick="togglePaidStatus('${tx.id}')" 
+                            class="px-2.5 py-1 rounded-full text-xs font-bold transition cursor-pointer ${tx.paid ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'}">
+                            ${tx.paid ? '<i class="fa-solid fa-check mr-1"></i>已入帳/已付' : '<i class="fa-regular fa-clock mr-1"></i>待繳付'}
+                        </button>
+                    </td>
+                    <td class="py-3.5 px-4 text-right font-mono font-bold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-slate-800'}">
+                        ${isIncome ? '+' : '-'}${formatCurrency(amt)}
+                    </td>
+                    <td class="py-3.5 px-4 text-center whitespace-nowrap no-print">
+                        <div class="flex items-center justify-center space-x-1">
+                            <button onclick="openEditModal('${tx.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition" title="編輯項目">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteTransaction('${tx.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="刪除項目">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const subtotalEl = document.getElementById('tableSubtotal');
+            if (currentFilter === 'all') {
+                subtotalEl.textContent = (subtotal >= 0 ? '淨結餘 +' : '淨赤字 ') + formatCurrency(subtotal);
+                subtotalEl.className = `py-4 px-4 text-right text-base font-mono ${subtotal >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+            } else {
+                subtotalEl.textContent = formatCurrency(subtotal);
+                subtotalEl.className = 'py-4 px-4 text-right text-base font-mono text-brand-700';
+            }
+        };
+
+        // ==========================================
+        // 6. Chart.js 視覺化圖表邏輯
+        // ==========================================
+        function initCharts() {
+            const ctxDoughnut = document.getElementById('expenseDoughnutChart').getContext('2d');
+            doughnutChart = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['居住及固定開支', '信用卡還款', '生活及額外支出'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#0ea5e9', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, font: { family: "'Noto Sans TC', sans-serif", size: 11 } }
+                        },
+                        title: {
+                            display: true,
+                            text: '三大支出類別佔比',
+                            font: { family: "'Noto Sans TC', sans-serif", size: 13, weight: 'bold' },
+                            color: '#334155'
+                        }
+                    }
+                }
+            });
+
+            const ctxBar = document.getElementById('categoryBarChart').getContext('2d');
+            barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['總收入', '固定開支', '信用卡', '生活額外'],
+                    datasets: [{
+                        label: '金額 (HKD)',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#10b981', '#0ea5e9', '#f59e0b', '#8b5cf6'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: '收支項目金額對比 (HKD)',
+                            font: { family: "'Noto Sans TC', sans-serif", size: 13, weight: 'bold' },
+                            color: '#334155'
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+                        x: { ticks: { font: { family: "'Noto Sans TC', sans-serif", size: 11 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            if (!doughnutChart || !barChart) return;
+
+            let income = 0, fixed = 0, credit = 0, extra = 0;
+            transactions.forEach(t => {
+                const amt = Number(t.amount) || 0;
+                if (t.category === 'income') income += amt;
+                else if (t.category === 'fixed') fixed += amt;
+                else if (t.category === 'credit') credit += amt;
+                else if (t.category === 'extra') extra += amt;
+            });
+
+            doughnutChart.data.datasets[0].data = [fixed, credit, extra];
+            doughnutChart.update();
+
+            barChart.data.datasets[0].data = [income, fixed, credit, extra];
+            barChart.update();
+        }
+
+        // ==========================================
+        // 7. 匯出 CSV 與工具函數
+        // ==========================================
+        window.exportToCSV = function() {
+            let csvContent = "\uFEFF";
+            csvContent += `家庭收支平衡表 (${currentFamilyCode} - ${currentMonth})\n`;
+            csvContent += "分類,記帳成員,項目名稱,備註說明,繳費狀態,收支方向,金額(HKD)\n";
+
+            transactions.forEach(tx => {
+                const catName = (categoryMeta[tx.category] || categoryMeta.extra).label;
+                const member = tx.member || '家庭共同';
+                const status = tx.paid ? "已繳付/已入帳" : "待繳付";
+                const direction = tx.category === 'income' ? "收入" : "支出";
+                const safeName = `"${tx.name.replace(/"/g, '""')}"`;
+                const safeNote = `"${(tx.note || '').replace(/"/g, '""')}"`;
+                csvContent += `${catName},${member},${safeName},${safeNote},${status},${direction},${tx.amount}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `家庭收支平衡表_${currentFamilyCode}_${currentMonth}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('雲端報表已成功匯出為 CSV 檔案！');
+        };
+
+        function updateCloudStatus(state, text) {
+            const badge = document.getElementById('cloudStatusBadge');
+            if (state === 'connected') {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800';
+                badge.innerHTML = `<i class="fa-solid fa-cloud-check mr-1"></i> ${text}`;
+            } else if (state === 'syncing') {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800';
+                badge.innerHTML = `<i class="fa-solid fa-rotate fa-spin mr-1"></i> ${text}`;
+            } else {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800';
+                badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> ${text}`;
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toastNotification');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            msg.textContent = message;
+            if (type === 'error') icon.className = 'fa-solid fa-circle-exclamation text-rose-400';
+            else if (type === 'warning') icon.className = 'fa-solid fa-trash-can text-amber-400';
+            else icon.className = 'fa-solid fa-circle-check text-emerald-400';
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // ==========================================
+        // 8. 頁面載入啟動流程
+        // ==========================================
+        window.onload = function() {
+            window.updateCategoryOptions();
+            initCharts();
+            initAuthAndCloud();
+
+            // 監聽月份切換：即時從雲端載入該月份歷史記錄
+            document.getElementById('monthSelector').addEventListener('change', function(e) {
+                currentMonth = e.target.value;
+                subscribeToCloudTransactions();
+            });
+
+            // 監聽新增表單提交
+            document.getElementById('transactionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addTransactionToCloud();
+            });
+
+            // 監聽編輯表單提交
+            document.getElementById('editForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveEditTransactionToCloud();
+            });
+        };
+    </script>
+</body>
+</html>
