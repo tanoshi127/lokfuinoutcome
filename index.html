@@ -69,7 +69,7 @@
             
             <div class="flex items-center space-x-2 sm:space-x-3 no-print">
                 <!-- 家庭共享帳本設定按鈕 -->
-                <button id="openFamilyBtn" type="button" onclick="if(window.openFamilyModal) window.openFamilyModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
+                <button id="openFamilyBtn" type="button" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
                     <i class="fa-solid fa-users"></i>
                     <span id="currentFamilyDisplay">樂富家庭帳本</span>
                 </button>
@@ -98,7 +98,7 @@
     <!-- 主內容區 -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        <!-- 新月份快速建立提示橫幅 (當切換到空白月份時顯示) -->
+        <!-- 新月份快速建立提示橫幅 -->
         <div id="emptyMonthBanner" class="hidden bg-gradient-to-r from-brand-600 to-indigo-600 rounded-2xl p-5 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl shrink-0">
@@ -116,7 +116,6 @@
 
         <!-- 頂部 KPI 數據卡片區 -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- 總收入 -->
             <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-slate-500">本月總收入</p>
@@ -128,7 +127,6 @@
                 </div>
             </div>
 
-            <!-- 總支出 -->
             <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-slate-500">本月總支出</p>
@@ -140,7 +138,6 @@
                 </div>
             </div>
 
-            <!-- 本月結餘 -->
             <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-slate-500">本月淨結餘 (現金流)</p>
@@ -152,7 +149,6 @@
                 </div>
             </div>
 
-            <!-- 儲蓄率 / 財務健康度 -->
             <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-slate-500">本月儲蓄率</p>
@@ -170,7 +166,7 @@
         <!-- 中間區域：快速新增表單 + 視覺化圖表 -->
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- 左側：新增收支項目表單 (佔 5 欄) -->
+            <!-- 左側：新增收支項目表單 -->
             <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm no-print flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-4">
@@ -181,7 +177,6 @@
                     </div>
 
                     <form id="transactionForm" class="space-y-3.5">
-                        <!-- 收支類型切換 -->
                         <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
                             <label class="cursor-pointer">
                                 <input type="radio" name="txType" value="expense" class="peer sr-only" checked onchange="updateCategoryOptions()">
@@ -197,12 +192,10 @@
                             </label>
                         </div>
 
-                        <!-- 項目分類 與 記帳成員 -->
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                             <div class="sm:col-span-7">
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">財務分類</label>
                                 <select id="txCategory" required class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5">
-                                    <!-- 動態載入選項 -->
                                 </select>
                             </div>
                             <div class="sm:col-span-5">
@@ -216,7 +209,6 @@
                             </div>
                         </div>
 
-                        <!-- 項目名稱與金額 -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">項目名稱</label>
@@ -230,14 +222,18 @@
                             </div>
                         </div>
 
-                        <!-- 備註 / 狀態 -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                            <div class="sm:col-span-4">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">記賬日期</label>
+                                <input type="date" id="txDate" required 
+                                    class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5 font-mono">
+                            </div>
+                            <div class="sm:col-span-4">
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">備註 (選填)</label>
-                                <input type="text" id="txNote" placeholder="例如：自動轉帳、街市買餸..." 
+                                <input type="text" id="txNote" placeholder="例如：自動轉帳..." 
                                     class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5">
                             </div>
-                            <div>
+                            <div class="sm:col-span-4">
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">繳費狀態</label>
                                 <select id="txPaid" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2.5">
                                     <option value="true">✅ 已入帳 / 已繳付</option>
@@ -253,7 +249,6 @@
                     </form>
                 </div>
 
-                <!-- 專業理財小貼士 -->
                 <div class="mt-4 p-3.5 bg-brand-50 border border-brand-100 rounded-xl text-xs text-brand-900 flex items-start space-x-2.5">
                     <i class="fa-solid fa-lightbulb text-brand-600 text-base mt-0.5"></i>
                     <div>
@@ -263,7 +258,7 @@
                 </div>
             </div>
 
-            <!-- 右側：數據視覺化圖表區 (佔 7 欄) -->
+            <!-- 右側：數據視覺化圖表區 -->
             <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
                     <div>
@@ -276,12 +271,10 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-center">
-                    <!-- 圓餅圖：支出分類佔比 -->
                     <div class="relative h-60 w-full flex flex-col items-center justify-center">
                         <canvas id="expenseDoughnutChart"></canvas>
                     </div>
                     
-                    <!-- 長條圖：各類金額對比 -->
                     <div class="relative h-60 w-full flex flex-col items-center justify-center">
                         <canvas id="categoryBarChart"></canvas>
                     </div>
@@ -291,7 +284,6 @@
 
         <!-- 底部：結構化專業明細報表區 -->
         <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <!-- 報表標題與篩選列 -->
             <div class="p-5 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50">
                 <div>
                     <div class="flex items-center space-x-2">
@@ -301,9 +293,7 @@
                     <p class="text-xs text-slate-500 mt-0.5">所有更改將自動同步至同帳本的家庭成員裝置</p>
                 </div>
 
-                <!-- 分類與成員篩選控制列 -->
                 <div class="flex flex-wrap items-center gap-2 no-print">
-                    <!-- 成員篩選下拉選單 -->
                     <select id="memberFilterSelect" onchange="renderTable()" class="bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:ring-brand-500">
                         <option value="all">👥 所有家庭成員</option>
                         <option value="戶主">👨 戶主 / 爸爸</option>
@@ -312,7 +302,6 @@
                         <option value="其他成員">🧑 其他成員</option>
                     </select>
 
-                    <!-- 分類篩選按鈕組 -->
                     <div class="flex flex-wrap gap-1" id="filterButtons">
                         <button onclick="setFilter('all')" data-filter="all" class="filter-btn active px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white transition">全部</button>
                         <button onclick="setFilter('income')" data-filter="income" class="filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">收入</button>
@@ -323,11 +312,11 @@
                 </div>
             </div>
 
-            <!-- 響應式表格 -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-100/80 text-slate-600 text-xs uppercase tracking-wider border-b border-slate-200">
+                            <th class="py-3.5 px-4 font-bold">記賬日期</th>
                             <th class="py-3.5 px-4 font-bold">類別標籤</th>
                             <th class="py-3.5 px-4 font-bold">記帳成員</th>
                             <th class="py-3.5 px-4 font-bold">項目名稱</th>
@@ -338,11 +327,10 @@
                         </tr>
                     </thead>
                     <tbody id="reportTableBody" class="divide-y divide-slate-100 text-sm">
-                        <!-- 動態生成報表列 -->
                     </tbody>
                     <tfoot class="bg-slate-50 border-t-2 border-slate-200 font-bold text-slate-900">
                         <tr>
-                            <td colspan="5" class="py-4 px-4 text-right text-sm">當前篩選列表小計：</td>
+                            <td colspan="6" class="py-4 px-4 text-right text-sm">當前篩選列表小計：</td>
                             <td id="tableSubtotal" class="py-4 px-4 text-right text-base font-mono text-brand-700">$0.00</td>
                             <td class="no-print"></td>
                         </tr>
@@ -353,13 +341,13 @@
 
     </main>
 
-    <!-- 自定義提示訊息框 -->
+    <!-- 提示框 -->
     <div id="toastNotification" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center space-x-2.5 text-sm font-medium">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
         <span id="toastMessage">操作成功</span>
     </div>
 
-    <!-- 家庭共享帳本設定模態視窗 (Family Sync Modal) -->
+    <!-- 家庭共享帳本設定模態視窗 -->
     <div id="familyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
             <div class="flex items-center justify-between mb-4">
@@ -384,14 +372,14 @@
                     <div class="flex space-x-2">
                         <input type="text" id="familyIdInput" placeholder="例如：LOKFU_FAMILY" 
                             class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-mono font-bold uppercase focus:ring-indigo-500 focus:border-indigo-500">
-                        <button type="button" onclick="copyFamilyCode()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition" title="複製代碼分享給家人">
+                        <button type="button" onclick="copyFamilyCode()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition">
                             <i class="fa-regular fa-copy mr-1"></i> 複製
                         </button>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">您的預設記帳身份 (方便自動選取)</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">您的預設記帳身份</label>
                     <select id="defaultMemberSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm">
                         <option value="戶主">👨 戶主 / 爸爸</option>
                         <option value="太太">👩 太太 / 媽媽</option>
@@ -400,7 +388,6 @@
                     </select>
                 </div>
 
-                <!-- GitHub 外部部署專用：自訂雲端設定區 -->
                 <div class="pt-2 border-t border-slate-200">
                     <div class="flex items-center justify-between mb-1">
                         <label class="block text-xs font-bold text-slate-700">
@@ -408,15 +395,12 @@
                         </label>
                         <span id="cloudModeHint" class="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">檢測中</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 mb-2 leading-relaxed">
-                        可直接從 Firebase 複製整段 <code class="bg-slate-100 px-1 rounded">firebaseConfig = { ... }</code> 貼上（免手動加雙引號）：
-                    </p>
                     <textarea id="customFirebaseConfigInput" rows="3" placeholder='貼上 Firebase 複製的設定碼，例如：{ apiKey: "AIza...", projectId: "..." }' 
                         class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-[11px] font-mono focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                 </div>
 
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-500">
-                    <span class="font-bold text-slate-700">連線狀態 / 裝置識別碼：</span>
+                    <span class="font-bold text-slate-700">連線狀態：</span>
                     <span id="displayUserId" class="font-mono break-all">連線中...</span>
                 </div>
 
@@ -430,7 +414,7 @@
         </div>
     </div>
 
-    <!-- 編輯項目模態視窗 (Edit Modal) -->
+    <!-- 編輯項目模態視窗 -->
     <div id="editModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
             <div class="flex items-center justify-between mb-4">
@@ -465,9 +449,15 @@
                     <label class="block text-xs font-bold text-slate-700 mb-1">項目名稱</label>
                     <input type="text" id="editName" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">金額 (HKD $)</label>
-                    <input type="number" id="editAmount" required min="0" step="0.1" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm font-mono">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">記賬日期</label>
+                        <input type="date" id="editDate" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">金額 (HKD $)</label>
+                        <input type="number" id="editAmount" required min="0" step="0.1" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm font-mono">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">備註</label>
@@ -484,15 +474,11 @@
     <!-- Firebase 雲端資料庫與即時協作模組 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, onSnapshot, doc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================
-        // 1. 初始化 Firebase 與環境變數 (已內建您的專屬專案設定)
-        // ==========================================
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'lokfu-family-budget-github';
         
-        // 預設內建您的 Firebase 專案設定，上傳 GitHub 即開即用
         const defaultUserFirebaseConfig = {
             apiKey: "AIzaSyAznRnXYw9TX71wItdOZU2gjiPpVebctTA",
             authDomain: "kenny-eba2d.firebaseapp.com",
@@ -503,7 +489,6 @@
             measurementId: "G-3H6KF3KXWS"
         };
 
-        // 讀取環境變數、手動覆蓋設定，或預設使用上述內建設定
         let firebaseConfig = defaultUserFirebaseConfig;
         const savedCustomConfig = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG');
         
@@ -518,19 +503,26 @@
         let db = null;
         let isCloudMode = false;
 
+        const cloudInitTimer = setTimeout(() => {
+            if (!isCloudMode) {
+                console.warn("雲端初始化逾期，自動切換至本機同步模式");
+                updateCloudStatus('local', '本機雲端模式 (已啟用)');
+            }
+        }, 3000);
+
         if (firebaseConfig && firebaseConfig.apiKey) {
             try {
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
                 isCloudMode = true;
+                clearTimeout(cloudInitTimer);
             } catch (e) {
-                console.error("Firebase 初始化失敗，切換至本機模式:", e);
+                console.error("Firebase 初始化失敗:", e);
                 isCloudMode = false;
             }
         }
 
-        // 應用程式狀態變數
         let currentUser = null;
         let currentFamilyCode = localStorage.getItem('LOKFU_FAMILY_CODE') || 'LOKFU_FAMILY';
         let currentMonth = '2026-11';
@@ -539,88 +531,34 @@
         let unsubscribeSnapshot = null;
         let doughnutChart = null;
         let barChart = null;
-        let isInitialLoadForDefaultMonth = true;
 
-        // 樂富家庭預設範本數據 (用於首次建立或新月份一鍵匯入)
         const defaultTemplateItems = [
-            { category: 'income', member: '戶主', name: '每月主要薪金收入', amount: 45000, note: '家庭總入息', paid: true },
-            { category: 'income', member: '太太', name: '其他津貼 / 兼職收入', amount: 3500, note: '每月浮動收入', paid: true },
-            { category: 'fixed', member: '家庭共同', name: '樂富居屋/物業按揭供款', amount: 11500, note: '銀行自動轉帳', paid: true },
-            { category: 'fixed', member: '家庭共同', name: '屋苑管理費及差餉地租', amount: 1650, note: '樂富屋苑管理處', paid: true },
-            { category: 'fixed', member: '家庭共同', name: '水費、電費及煤氣費', amount: 1200, note: '每月平均預算', paid: true },
-            { category: 'fixed', member: '戶主', name: '家居寬頻及手提電話費', amount: 680, note: '電訊商月費', paid: true },
-            { category: 'fixed', member: '家庭共同', name: '家庭成員保險供款', amount: 2400, note: '醫療及人壽保障', paid: true },
-            { category: 'fixed', member: '戶主', name: '每月固定停車場月租', amount: 2800, note: '樂富停車場', paid: false },
-            { category: 'credit', member: '戶主', name: '滙豐銀行 (HSBC) 信用卡', amount: 3800, note: '日常簽帳結算', paid: true },
-            { category: 'credit', member: '太太', name: '東亞銀行 (BEA) 信用卡', amount: 2100, note: '網購及餐飲', paid: false },
-            { category: 'credit', member: '戶主', name: '美國運通 (AE) 信用卡', amount: 1950, note: '超市及百貨', paid: false },
-            { category: 'credit', member: '太太', name: '安信 (PrimeCredit) 信用卡', amount: 1500, note: '分期還款', paid: true },
-            { category: 'credit', member: '戶主', name: '花旗銀行 (Citibank) 信用卡', amount: 1200, note: '八達通自動增值', paid: true },
-            { category: 'credit', member: '太太', name: '大新銀行 (Dah Sing) 信用卡', amount: 850, note: '油費及雜項', paid: false },
-            { category: 'extra', member: '太太', name: '家庭日常買餸及家用', amount: 6000, note: '街市及超市開支', paid: true },
-            { category: 'extra', member: '戶主', name: '父母家用 / 子女零用', amount: 3000, note: '每月固定家庭支持', paid: true },
-            { category: 'extra', member: '家庭共同', name: '本月額外支出 (維修/節日)', amount: 1500, note: '家居小額維修及聚餐', paid: false }
+            { date: '2026-11-01', category: 'income', member: '戶主', name: '每月主要薪金收入', amount: 45000, note: '家庭總入息', paid: true },
+            { date: '2026-11-05', category: 'income', member: '太太', name: '其他津貼 / 兼職收入', amount: 3500, note: '每月浮動收入', paid: true },
+            { date: '2026-11-01', category: 'fixed', member: '家庭共同', name: '樂富居屋/物業按揭供款', amount: 11500, note: '銀行自動轉帳', paid: true },
+            { date: '2026-11-01', category: 'fixed', member: '家庭共同', name: '屋苑管理費及差餉地租', amount: 1650, note: '樂富屋苑管理處', paid: true },
+            { date: '2026-11-08', category: 'fixed', member: '家庭共同', name: '水費、電費及煤氣費', amount: 1200, note: '每月平均預算', paid: true },
+            { date: '2026-11-10', category: 'fixed', member: '戶主', name: '家居寬頻及手提電話費', amount: 680, note: '電訊商月費', paid: true },
+            { date: '2026-11-12', category: 'fixed', member: '家庭共同', name: '家庭成員保險供款', amount: 2400, note: '醫療及人壽保障', paid: true },
+            { date: '2026-11-15', category: 'fixed', member: '戶主', name: '每月固定停車場月租', amount: 2800, note: '樂富停車場', paid: false },
+            { date: '2026-11-06', category: 'credit', member: '戶主', name: '滙豐銀行 (HSBC) 信用卡', amount: 3800, note: '日常簽帳結算', paid: true },
+            { date: '2026-11-16', category: 'credit', member: '太太', name: '東亞銀行 (BEA) 信用卡', amount: 2100, note: '網購及餐飲', paid: false },
+            { date: '2026-11-18', category: 'credit', member: '戶主', name: '美國運通 (AE) 信用卡', amount: 1950, note: '超市及百貨', paid: false },
+            { date: '2026-11-09', category: 'credit', member: '太太', name: '安信 (PrimeCredit) 信用卡', amount: 1500, note: '分期還款', paid: true },
+            { date: '2026-11-11', category: 'credit', member: '戶主', name: '花旗銀行 (Citibank) 信用卡', amount: 1200, note: '八達通自動增值', paid: true },
+            { date: '2026-11-20', category: 'credit', member: '太太', name: '大新銀行 (Dah Sing) 信用卡', amount: 850, note: '油費及雜項', paid: false },
+            { date: '2026-11-13', category: 'extra', member: '太太', name: '家庭日常買餸及家用', amount: 6000, note: '街市及超市開支', paid: true },
+            { date: '2026-11-03', category: 'extra', member: '戶主', name: '父母家用 / 子女零用', amount: 3000, note: '每月固定家庭支持', paid: true },
+            { date: '2026-11-13', category: 'extra', member: '家庭共同', name: '本月額外支出 (維修/節日)', amount: 1500, note: '家居小額維修及聚餐', paid: false }
         ];
 
         const categoryMeta = {
-            income: { label: '收入入息', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: 'fa-arrow-trend-up' },
-            fixed:  { label: '居住及固定開支', badgeClass: 'bg-blue-100 text-blue-800 border-blue-200', icon: 'fa-house' },
-            credit: { label: '信用卡還款', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'fa-credit-card' },
-            extra:  { label: '生活及額外支出', badgeClass: 'bg-purple-100 text-purple-800 border-purple-200', icon: 'fa-bag-shopping' }
+            income: { label: '家庭收入', icon: 'fa-sack-dollar', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+            fixed: { label: '固定開支', icon: 'fa-house-chimney', badgeClass: 'bg-sky-50 text-sky-700 border-sky-200' },
+            credit: { label: '信用卡還款', icon: 'fa-credit-card', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' },
+            extra: { label: '生活額外', icon: 'fa-cart-shopping', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' }
         };
 
-        // ==========================================
-        // 2. 身份驗證與雲端/本機雙模式啟動
-        // ==========================================
-        async function initAuthAndCloud() {
-            if (!isCloudMode) {
-                // GitHub 無雲端設定時，自動啟用「本機瀏覽器儲存模式」，避免卡在連線中
-                document.getElementById('displayUserId').textContent = '本機儲存模式 (未設定雲端金鑰)';
-                document.getElementById('cloudModeHint').textContent = '目前：本機儲存';
-                updateCloudStatus('local', '本機模式 (已儲存)');
-                loadTransactions();
-                return;
-            }
-
-            document.getElementById('cloudModeHint').textContent = '目前：雲端同步';
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("雲端驗證失敗，降級為本機模式:", error);
-                isCloudMode = false;
-                updateCloudStatus('local', '本機模式 (雲端連線失敗)');
-                loadTransactions();
-            }
-        }
-
-        if (isCloudMode && auth) {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    document.getElementById('displayUserId').textContent = user.uid;
-                    updateCloudStatus('connected', '雲端已即時同步');
-                    loadTransactions();
-                }
-            });
-        }
-
-        // 統一資料載入入口 (自動分流雲端或本機)
-        function loadTransactions() {
-            document.getElementById('reportMonthBadge').textContent = currentMonth;
-            document.getElementById('currentFamilyDisplay').textContent = currentFamilyCode;
-
-            if (!isCloudMode) {
-                loadFromLocalStorage();
-                return;
-            }
-            subscribeToCloudTransactions();
-        }
-
-        // 本機儲存讀取邏輯 (GitHub 預設保底)
         function loadFromLocalStorage() {
             const storageKey = `BUDGET_${currentFamilyCode}_${currentMonth}`;
             const raw = localStorage.getItem(storageKey);
@@ -638,6 +576,13 @@
                 localStorage.setItem('LOKFU_SEEDED_2026_11', 'true');
             }
 
+            data.sort((a, b) => {
+                const dateA = a.date || `${currentMonth}-01`;
+                const dateB = b.date || `${currentMonth}-01`;
+                if (dateB !== dateA) return dateB.localeCompare(dateA);
+                return (b.createdAt || 0) - (a.createdAt || 0);
+            });
+
             transactions = data;
             updateEmptyBanner();
             renderApp();
@@ -650,111 +595,166 @@
             renderApp();
         }
 
-        function updateEmptyBanner() {
-            const emptyBanner = document.getElementById('emptyMonthBanner');
-            if (transactions.length === 0) {
-                document.getElementById('emptyMonthLabel').textContent = currentMonth;
-                emptyBanner.classList.remove('hidden');
-            } else {
-                emptyBanner.classList.add('hidden');
-            }
-        }
-
-        // 監聽指定「家庭代碼」與「月份」的雲端資料
-        function subscribeToCloudTransactions() {
-            if (!currentUser || !db) return;
-
-            if (unsubscribeSnapshot) {
-                unsubscribeSnapshot();
-            }
-
-            updateCloudStatus('syncing', '讀取雲端帳目...');
-
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'family_budget_records');
-
-            unsubscribeSnapshot = onSnapshot(colRef, async (snapshot) => {
-                const allDocs = [];
-                snapshot.forEach((docSnap) => {
-                    allDocs.push({ id: docSnap.id, ...docSnap.data() });
-                });
-
-                const filteredDocs = allDocs.filter(item => 
-                    item.familyCode === currentFamilyCode && item.month === currentMonth
-                );
-
-                filteredDocs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-                if (filteredDocs.length === 0 && currentFamilyCode === 'LOKFU_FAMILY' && currentMonth === '2026-11' && isInitialLoadForDefaultMonth) {
-                    isInitialLoadForDefaultMonth = false;
-                    await seedDefaultDataToCloud();
-                    return;
-                }
-
-                isInitialLoadForDefaultMonth = false;
-                transactions = filteredDocs;
-                updateCloudStatus('connected', '雲端已即時同步');
-                updateEmptyBanner();
-                renderApp();
-            }, (error) => {
-                console.error("讀取雲端數據失敗:", error);
-                updateCloudStatus('error', '同步失敗，請檢查設定');
-                showToast('雲端同步發生錯誤，請檢查 Firebase 設定或權限', 'error');
-            });
-        }
-
-        // 批次寫入預設範本
         async function seedDefaultDataToCloud() {
-            if (!isCloudMode) {
-                transactions = defaultTemplateItems.map((item, idx) => ({
+            if (!isCloudMode || !currentUser || !db) {
+                const storageKey = `BUDGET_${currentFamilyCode}_${currentMonth}`;
+                const data = defaultTemplateItems.map((item, idx) => ({
                     ...item,
                     id: 'local_' + Date.now() + '_' + idx,
                     familyCode: currentFamilyCode,
                     month: currentMonth,
                     createdAt: Date.now() - idx * 1000
                 }));
+                transactions = data;
                 saveToLocalStorage();
-                showToast(`已為 ${currentMonth} 載入樂富家庭範本！`);
+                showToast('已成功載入樂富預設固定開支範本！');
                 return;
             }
 
-            if (!currentUser || !db) return;
-            updateCloudStatus('syncing', '初始化雲端範本...');
             try {
                 const batch = writeBatch(db);
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'family_budget_records');
-                const now = Date.now();
-
-                defaultTemplateItems.forEach((item, index) => {
+                
+                defaultTemplateItems.forEach((item, idx) => {
                     const newDocRef = doc(colRef);
                     batch.set(newDocRef, {
                         ...item,
                         familyCode: currentFamilyCode,
                         month: currentMonth,
-                        createdAt: now - index * 1000,
+                        createdAt: Date.now() - idx * 1000,
                         updatedBy: currentUser.uid
                     });
                 });
 
                 await batch.commit();
-                showToast(`已為 ${currentMonth} 載入樂富家庭範本並同步至雲端！`);
-            } catch (error) {
-                console.error("初始化範本失敗:", error);
-                showToast('寫入雲端失敗', 'error');
+                showToast('已成功透過雲端載入預設範本！');
+            } catch (err) {
+                console.error("載入範本失敗:", err);
+                showToast('範本載入失敗', 'error');
             }
         }
 
-        // ==========================================
-        // 3. CRUD 操作函數 (自動支援雲端與本機)
-        // ==========================================
-        window.loadTemplateForCurrentMonth = async function() {
-            await seedDefaultDataToCloud();
-        };
+        function initAuthAndCloud() {
+            document.getElementById('currentFamilyDisplay').textContent = currentFamilyCode;
+            document.getElementById('familyIdInput').value = currentFamilyCode;
+            document.getElementById('reportMonthBadge').textContent = currentMonth;
+            document.getElementById('monthSelector').value = currentMonth;
 
-        async function addTransactionToCloud() {
+            const configDisplay = document.getElementById('displayUserId');
+            if (configDisplay) {
+                configDisplay.textContent = firebaseConfig.projectId ? `專案: ${firebaseConfig.projectId} (代碼: ${currentFamilyCode})` : `本機模式 (代碼: ${currentFamilyCode})`;
+            }
+
+            const cloudModeHint = document.getElementById('cloudModeHint');
+            if (cloudModeHint) {
+                cloudModeHint.textContent = isCloudMode ? '雲端連線中' : '本機儲存中';
+                cloudModeHint.className = isCloudMode ? 'text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold' : 'text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-bold';
+            }
+
+            if (!isCloudMode || !auth || !db) {
+                updateCloudStatus('local', '本機雲端模式 (自動儲存)');
+                loadFromLocalStorage();
+                return;
+            }
+
+            updateCloudStatus('syncing', '連線雲端中...');
+
+            signInAnonymously(auth).then(() => {
+                currentUser = auth.currentUser;
+                if (currentUser && configDisplay) {
+                    configDisplay.textContent = `UID: ${currentUser.uid.substring(0,8)}... (代碼: ${currentFamilyCode})`;
+                }
+                updateCloudStatus('connected', '雲端已即時同步');
+                loadTransactions();
+            }).catch(error => {
+                console.error("匿名登入失敗:", error);
+                updateCloudStatus('local', '本機模式 (授權失敗)');
+                isCloudMode = false;
+                loadFromLocalStorage();
+            });
+        }
+
+        function updateCloudStatus(status, text) {
+            const badge = document.getElementById('cloudStatusBadge');
+            if (!badge) return;
+            if (status === 'connected') {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800';
+                badge.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1 text-emerald-600"></i> ${text}`;
+            } else if (status === 'syncing') {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800';
+                badge.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> ${text}`;
+            } else {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700';
+                badge.innerHTML = `<i class="fa-solid fa-hard-drive mr-1 text-slate-500"></i> ${text}`;
+            }
+        }
+
+        function getDefaultDateForMonth(monthStr) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const currentYearMonth = `${yyyy}-${mm}`;
+            return monthStr === currentYearMonth ? `${yyyy}-${mm}-${dd}` : `${monthStr}-01`;
+        }
+
+        function loadTransactions() {
+            if (!isCloudMode || !db) {
+                loadFromLocalStorage();
+                return;
+            }
+
+            if (unsubscribeSnapshot) unsubscribeSnapshot();
+
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'family_budget_records');
+            
+            unsubscribeSnapshot = onSnapshot(colRef, (snapshot) => {
+                const list = [];
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.familyCode === currentFamilyCode && data.month === currentMonth) {
+                        list.push({ id: docSnap.id, ...data });
+                    }
+                });
+
+                list.sort((a, b) => {
+                    const dateA = a.date || `${currentMonth}-01`;
+                    const dateB = b.date || `${currentMonth}-01`;
+                    if (dateB !== dateA) return dateB.localeCompare(dateA);
+                    return (b.createdAt || 0) - (a.createdAt || 0);
+                });
+
+                transactions = list;
+                updateEmptyBanner();
+                renderApp();
+            }, (error) => {
+                console.error("監聽失敗:", error);
+                loadFromLocalStorage();
+            });
+        }
+
+        function updateEmptyBanner() {
+            const banner = document.getElementById('emptyMonthBanner');
+            const label = document.getElementById('emptyMonthLabel');
+            if (!banner || !label) return;
+
+            if (transactions.length === 0) {
+                label.textContent = currentMonth;
+                banner.classList.remove('hidden');
+                banner.classList.add('flex');
+            } else {
+                banner.classList.add('hidden');
+                banner.classList.remove('flex');
+            }
+        }
+
+        async function addTransactionToCloud(e) {
+            if (e) e.preventDefault();
             const category = document.getElementById('txCategory').value;
             const member = document.getElementById('txMember').value;
             const name = document.getElementById('txName').value.trim();
             const amount = parseFloat(document.getElementById('txAmount').value);
+            const date = document.getElementById('txDate').value || getDefaultDateForMonth(currentMonth);
             const note = document.getElementById('txNote').value.trim() || '-';
             const paid = document.getElementById('txPaid').value === 'true';
 
@@ -763,24 +763,20 @@
                 return;
             }
 
-            if (!isCloudMode) {
+            if (!isCloudMode || !currentUser || !db) {
                 transactions.unshift({
                     id: 'local_' + Date.now(),
                     familyCode: currentFamilyCode,
                     month: currentMonth,
-                    category, member, name, amount, note, paid,
+                    date, category, member, name, amount, note, paid,
                     createdAt: Date.now()
                 });
                 saveToLocalStorage();
                 document.getElementById('transactionForm').reset();
+                document.getElementById('txDate').value = getDefaultDateForMonth(currentMonth);
                 document.getElementById('txMember').value = document.getElementById('defaultMemberSelect').value;
                 window.updateCategoryOptions();
-                showToast(`已新增「${name}」並儲存於本機！`);
-                return;
-            }
-
-            if (!currentUser || !db) {
-                showToast('雲端尚未連線完成，請稍候', 'error');
+                showToast(`已新增「${name}」！`);
                 return;
             }
 
@@ -793,18 +789,19 @@
                 await addDoc(colRef, {
                     familyCode: currentFamilyCode,
                     month: currentMonth,
-                    category, member, name, amount, note, paid,
+                    date, category, member, name, amount, note, paid,
                     createdAt: Date.now(),
                     updatedBy: currentUser.uid
                 });
 
                 document.getElementById('transactionForm').reset();
+                document.getElementById('txDate').value = getDefaultDateForMonth(currentMonth);
                 document.getElementById('txMember').value = document.getElementById('defaultMemberSelect').value;
                 window.updateCategoryOptions();
-                showToast(`已新增「${name}」並同步給所有家庭成員！`);
+                showToast(`已新增「${name}」並同步！`);
             } catch (error) {
                 console.error("新增失敗:", error);
-                showToast('雲端儲存失敗，請重試', 'error');
+                showToast('儲存失敗', 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>儲存至雲端帳本</span>';
@@ -812,47 +809,39 @@
         }
 
         window.deleteTransaction = async function(id) {
-            const target = transactions.find(t => t.id === id);
-            if (!isCloudMode) {
+            if (!confirm('確定要刪除此筆記錄嗎？')) return;
+
+            if (!isCloudMode || id.startsWith('local_') || !db) {
                 transactions = transactions.filter(t => t.id !== id);
                 saveToLocalStorage();
-                showToast(`已刪除「${target ? target.name : ''}」`, 'warning');
+                showToast('已刪除');
                 return;
             }
 
-            if (!currentUser || !db) return;
             try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
-                await deleteDoc(docRef);
-                showToast(`已從雲端刪除「${target ? target.name : ''}」`, 'warning');
-            } catch (error) {
-                console.error("刪除失敗:", error);
-                showToast('刪除失敗，請重試', 'error');
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id));
+                showToast('已自雲端刪除');
+            } catch (e) {
+                console.error("刪除失敗:", e);
+                showToast('刪除失敗', 'error');
             }
         };
 
         window.togglePaidStatus = async function(id) {
             const tx = transactions.find(t => t.id === id);
             if (!tx) return;
+            const newPaid = !tx.paid;
 
-            if (!isCloudMode) {
-                tx.paid = !tx.paid;
+            if (!isCloudMode || id.startsWith('local_') || !db) {
+                tx.paid = newPaid;
                 saveToLocalStorage();
-                showToast(`已更新「${tx.name}」為${tx.paid ? '已繳付' : '待繳付'}`);
                 return;
             }
 
-            if (!currentUser || !db) return;
             try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
-                await updateDoc(docRef, {
-                    paid: !tx.paid,
-                    updatedBy: currentUser.uid
-                });
-                showToast(`已更新「${tx.name}」為${!tx.paid ? '已繳付' : '待繳付'}`);
-            } catch (error) {
-                console.error("更新狀態失敗:", error);
-                showToast('更新狀態失敗', 'error');
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id), { paid: newPaid });
+            } catch (e) {
+                console.error("更新狀態失敗:", e);
             }
         };
 
@@ -864,6 +853,7 @@
             document.getElementById('editCategory').value = tx.category;
             document.getElementById('editMember').value = tx.member || '家庭共同';
             document.getElementById('editName').value = tx.name;
+            document.getElementById('editDate').value = tx.date || getDefaultDateForMonth(currentMonth);
             document.getElementById('editAmount').value = tx.amount;
             document.getElementById('editNote').value = tx.note === '-' ? '' : tx.note;
 
@@ -878,17 +868,19 @@
             modal.classList.remove('flex');
         };
 
-        async function saveEditTransactionToCloud() {
+        async function saveEditTransactionToCloud(e) {
+            if (e) e.preventDefault();
             const id = document.getElementById('editId').value;
             const updatedFields = {
                 category: document.getElementById('editCategory').value,
                 member: document.getElementById('editMember').value,
                 name: document.getElementById('editName').value.trim(),
+                date: document.getElementById('editDate').value || getDefaultDateForMonth(currentMonth),
                 amount: parseFloat(document.getElementById('editAmount').value) || 0,
                 note: document.getElementById('editNote').value.trim() || '-'
             };
 
-            if (!isCloudMode) {
+            if (!isCloudMode || id.startsWith('local_') || !db) {
                 const idx = transactions.findIndex(t => t.id === id);
                 if (idx !== -1) {
                     transactions[idx] = { ...transactions[idx], ...updatedFields };
@@ -899,233 +891,183 @@
                 return;
             }
 
-            if (!currentUser || !db) return;
             try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
-                await updateDoc(docRef, {
-                    ...updatedFields,
-                    updatedBy: currentUser.uid
-                });
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id), updatedFields);
                 window.closeEditModal();
-                showToast('修改已即時同步至雲端！');
-            } catch (error) {
-                console.error("修改失敗:", error);
-                showToast('儲存修改失敗', 'error');
+                showToast('修改已同步！');
+            } catch (e) {
+                console.error("更新失敗:", e);
+                showToast('更新失敗', 'error');
             }
         }
 
-        // ==========================================
-        // 4. 家庭共享帳本設定與切換邏輯
-        // ==========================================
         window.openFamilyModal = function() {
-            const familyInput = document.getElementById('familyIdInput');
-            const configInput = document.getElementById('customFirebaseConfigInput');
             const modal = document.getElementById('familyModal');
-            
-            if (familyInput) familyInput.value = currentFamilyCode;
-            if (configInput) configInput.value = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG') || '';
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         };
 
         window.closeFamilyModal = function() {
             const modal = document.getElementById('familyModal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        };
-
-        // 智能解析 Firebase 設定（支援原生 JS 物件或 JSON 字串）
-        function parseFlexibleFirebaseConfig(rawText) {
-            let text = rawText.trim();
-            // 移除 const firebaseConfig = 或類似前綴與結尾分號
-            const braceStart = text.indexOf('{');
-            const braceEnd = text.lastIndexOf('}');
-            if (braceStart !== -1 && braceEnd !== -1 && braceEnd > braceStart) {
-                text = text.substring(braceStart, braceEnd + 1);
-            }
-            // 先嘗試標準 JSON 解析
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                // 自動為未加引號的 key 補上雙引號，並將單引號轉為雙引號
-                const fixedJson = text
-                    .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":')
-                    .replace(/:\s*'([^']*)'/g, ': "$1"')
-                    .replace(/,\s*}/g, '}');
-                return JSON.parse(fixedJson);
-            }
-        }
-
-        window.switchFamilyAccount = function() {
-            const rawCode = document.getElementById('familyIdInput').value.trim().toUpperCase();
-            if (!rawCode) {
-                showToast('請輸入有效的家庭帳本代碼', 'error');
-                return;
-            }
-            const cleanCode = rawCode.replace(/[^A-Z0-9_-]/g, '');
-            if (!cleanCode) {
-                showToast('代碼請使用英文字母或數字', 'error');
-                return;
-            }
-
-            // 檢查是否有更新自訂 Firebase Config (針對 GitHub 部署)
-            const customConfigText = document.getElementById('customFirebaseConfigInput').value.trim();
-            const previousConfig = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG') || '';
-            
-            if (customConfigText !== previousConfig) {
-                if (customConfigText === '') {
-                    localStorage.removeItem('LOKFU_CUSTOM_FIREBASE_CONFIG');
-                } else {
-                    try {
-                        const parsed = parseFlexibleFirebaseConfig(customConfigText);
-                        if (!parsed || !parsed.apiKey || !parsed.projectId) {
-                            showToast('設定碼缺少 apiKey 或 projectId，請檢查複製內容', 'error');
-                            return;
-                        }
-                        localStorage.setItem('LOKFU_CUSTOM_FIREBASE_CONFIG', JSON.stringify(parsed));
-                    } catch (e) {
-                        showToast('設定碼格式無法辨識，請確認包含完整大括號 { ... }', 'error');
-                        return;
-                    }
-                }
-                localStorage.setItem('LOKFU_FAMILY_CODE', cleanCode);
-                showToast('雲端設定已儲存，正在重新連線...');
-                setTimeout(() => location.reload(), 800);
-                return;
-            }
-
-            currentFamilyCode = cleanCode;
-            localStorage.setItem('LOKFU_FAMILY_CODE', cleanCode);
-            const defaultMember = document.getElementById('defaultMemberSelect').value;
-            document.getElementById('txMember').value = defaultMember;
-
-            window.closeFamilyModal();
-            loadTransactions();
-            showToast(`已切換至家庭帳本：${currentFamilyCode}`);
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         };
 
         window.copyFamilyCode = function() {
             const input = document.getElementById('familyIdInput');
             input.select();
             document.execCommand('copy');
-            showToast('已複製家庭帳本代碼，可貼上發送給家人！');
+            showToast('已複製家庭帳本代碼！');
         };
 
-        // ==========================================
-        // 5. UI 渲染、圖表更新與篩選邏輯
-        // ==========================================
+        window.switchFamilyAccount = function() {
+            const code = document.getElementById('familyIdInput').value.trim().toUpperCase();
+            if (!code) {
+                showToast('請輸入有效的家庭代碼', 'error');
+                return;
+            }
+
+            currentFamilyCode = code;
+            localStorage.setItem('LOKFU_FAMILY_CODE', currentFamilyCode);
+            
+            const defMember = document.getElementById('defaultMemberSelect').value;
+            localStorage.setItem('LOKFU_DEFAULT_MEMBER', defMember);
+
+            const customConfigText = document.getElementById('customFirebaseConfigInput').value.trim();
+            if (customConfigText) {
+                try {
+                    let cleaned = customConfigText;
+                    if (cleaned.startsWith('const firebaseConfig =')) {
+                        cleaned = cleaned.replace('const firebaseConfig =', '').trim();
+                    }
+                    if (cleaned.endsWith(';')) cleaned = cleaned.slice(0, -1);
+                    
+                    const parsed = JSON.parse(cleaned);
+                    if (parsed.apiKey) {
+                        localStorage.setItem('LOKFU_CUSTOM_FIREBASE_CONFIG', JSON.stringify(parsed));
+                        firebaseConfig = parsed;
+                    }
+                } catch (err) {
+                    try {
+                        const fixedJson = customConfigText
+                            .replace(/([a-zA-Z0-9_]+)\s*:/g, '"$1":')
+                            .replace(/'/g, '"');
+                        const parsed = JSON.parse(fixedJson);
+                        if (parsed.apiKey) {
+                            localStorage.setItem('LOKFU_CUSTOM_FIREBASE_CONFIG', JSON.stringify(parsed));
+                            firebaseConfig = parsed;
+                        }
+                    } catch (e2) {
+                        console.error("解析自訂設定失敗:", e2);
+                    }
+                }
+            }
+
+            window.closeFamilyModal();
+            showToast('設定已更新，正在重新連接...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 600);
+        };
+
         window.updateCategoryOptions = function() {
-            const txType = document.querySelector('input[name="txType"]:checked').value;
+            const type = document.querySelector('input[name="txType"]:checked').value;
             const select = document.getElementById('txCategory');
             select.innerHTML = '';
 
-            if (txType === 'income') {
-                select.innerHTML = `<option value="income">💰 家庭收入 (薪金 / 獎金 / 津貼)</option>`;
+            if (type === 'income') {
+                select.innerHTML = `
+                    <option value="income">💰 家庭主要/兼職收入</option>
+                `;
             } else {
                 select.innerHTML = `
-                    <option value="fixed">🏠 居住及固定開支 (按揭/管理費/水電/車位)</option>
+                    <option value="fixed">🏠 居住及固定開支 (按揭/管理費/水電煤/保險)</option>
                     <option value="credit">💳 信用卡與信貸還款 (滙豐/東亞/AE/安信等)</option>
-                    <option value="extra">🛍️ 日常生活與額外支出 (家用/餐飲/雜費)</option>
+                    <option value="extra">🛍️ 日常生活與額外支出 (買餸/家用/娛樂)</option>
                 `;
             }
         };
 
-        window.setFilter = function(filterType) {
-            currentFilter = filterType;
+        window.setFilter = function(filter) {
+            currentFilter = filter;
             document.querySelectorAll('.filter-btn').forEach(btn => {
-                if (btn.dataset.filter === filterType) {
+                if (btn.getAttribute('data-filter') === filter) {
                     btn.className = 'filter-btn active px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white transition';
                 } else {
                     btn.className = 'filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
                 }
             });
-            window.renderTable();
+            renderTable();
         };
 
-        function formatCurrency(num) {
-            return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-        }
-
         function renderApp() {
-            calculateAndRenderKPIs();
-            window.renderTable();
-            updateCharts();
-        }
+            let totalIncome = 0;
+            let totalExpense = 0;
+            let creditExpense = 0;
 
-        function calculateAndRenderKPIs() {
-            let totalIncome = 0, totalFixed = 0, totalCredit = 0, totalExtra = 0;
-
-            transactions.forEach(tx => {
-                const amt = Number(tx.amount) || 0;
-                if (tx.category === 'income') totalIncome += amt;
-                else if (tx.category === 'fixed') totalFixed += amt;
-                else if (tx.category === 'credit') totalCredit += amt;
-                else if (tx.category === 'extra') totalExtra += amt;
+            transactions.forEach(t => {
+                const amt = Number(t.amount) || 0;
+                if (t.category === 'income') {
+                    totalIncome += amt;
+                } else {
+                    totalExpense += amt;
+                    if (t.category === 'credit') {
+                        creditExpense += amt;
+                    }
+                }
             });
 
-            const totalExpense = totalFixed + totalCredit + totalExtra;
-            const netBalance = totalIncome - totalExpense;
-            const savingsRate = totalIncome > 0 ? ((netBalance / totalIncome) * 100) : 0;
-            const creditRatio = totalExpense > 0 ? ((totalCredit / totalExpense) * 100) : 0;
+            const balance = totalIncome - totalExpense;
+            const savingsRate = totalIncome > 0 ? Math.max(0, Math.round((balance / totalIncome) * 100)) : 0;
+            const creditRatio = totalExpense > 0 ? Math.round((creditExpense / totalExpense) * 100) : 0;
 
             document.getElementById('kpiIncome').textContent = formatCurrency(totalIncome);
             document.getElementById('kpiExpense').textContent = formatCurrency(totalExpense);
-            document.getElementById('kpiCreditRatio').textContent = `信用卡還款佔總支出: ${creditRatio.toFixed(1)}%`;
+            document.getElementById('kpiBalance').textContent = formatCurrency(balance);
+            document.getElementById('kpiSavingsRate').textContent = savingsRate + '%';
+            document.getElementById('savingsProgressBar').style.width = Math.min(100, Math.max(0, savingsRate)) + '%';
+            document.getElementById('kpiCreditRatio').textContent = `信用卡還款佔比: ${creditRatio}%`;
 
             const balanceEl = document.getElementById('kpiBalance');
-            const statusTextEl = document.getElementById('kpiStatusText');
-            const balanceIconBg = document.getElementById('kpiBalanceIconBg');
+            const statusEl = document.getElementById('kpiStatusText');
+            const iconBgEl = document.getElementById('kpiBalanceIconBg');
 
-            balanceEl.textContent = (netBalance >= 0 ? '+' : '') + formatCurrency(netBalance);
-
-            if (netBalance > 0) {
+            if (balance >= 0) {
                 balanceEl.className = 'text-2xl font-bold text-emerald-600 mt-1';
-                statusTextEl.textContent = '✅ 收支盈餘，現金流健康';
-                statusTextEl.className = 'text-xs font-medium text-emerald-600 mt-1';
-                balanceIconBg.className = 'w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl';
-            } else if (netBalance === 0) {
-                balanceEl.className = 'text-2xl font-bold text-slate-700 mt-1';
-                statusTextEl.textContent = '⚖️ 收支剛好打平';
-                statusTextEl.className = 'text-xs font-medium text-slate-500 mt-1';
+                statusEl.textContent = '✨ 財務收支平衡健壯';
+                statusEl.className = 'text-xs font-medium text-emerald-600 mt-1';
+                iconBgEl.className = 'w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl';
             } else {
                 balanceEl.className = 'text-2xl font-bold text-rose-600 mt-1';
-                statusTextEl.textContent = '⚠️ 出現赤字！支出大於收入';
-                statusTextEl.className = 'text-xs font-bold text-rose-600 mt-1';
-                balanceIconBg.className = 'w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl';
+                statusEl.textContent = '⚠️ 本月支出超越收入';
+                statusEl.className = 'text-xs font-medium text-rose-600 mt-1';
+                iconBgEl.className = 'w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl';
             }
-
-            const clampedSavings = Math.max(0, Math.min(100, savingsRate));
-            document.getElementById('kpiSavingsRate').textContent = `${savingsRate.toFixed(1)}%`;
-            document.getElementById('savingsProgressBar').style.width = `${clampedSavings}%`;
 
             const adviceEl = document.getElementById('financialAdvice');
-            if (transactions.length === 0) {
-                adviceEl.textContent = `本月暫無帳目記錄，新增收支後系統將自動為全家人分析財務狀況。`;
-            } else if (netBalance < 0) {
-                adviceEl.textContent = `本月預算超支 ${formatCurrency(Math.abs(netBalance))}。建議家庭成員共同檢視「信用卡還款」與「生活及額外支出」，減少非必要簽帳。`;
-            } else if (creditRatio > 30) {
-                adviceEl.textContent = `信用卡還款佔總支出高達 ${creditRatio.toFixed(1)}%（建議控制在 25% 以下），建議集中清還高息卡數或減少使用分期付款。`;
+            if (totalIncome === 0) {
+                adviceEl.textContent = '請先登錄本月家庭收入，以獲得準確的儲蓄率與財務健檢報告。';
+            } else if (creditRatio > 40) {
+                adviceEl.textContent = `注意：信用卡還款佔總支出高達 ${creditRatio}%，建議適度控制非必要簽帳，並依時清繳以避免利息支出。`;
             } else if (savingsRate >= 20) {
-                adviceEl.textContent = `表現非常優秀！本月儲蓄率達 ${savingsRate.toFixed(1)}%，建議將盈餘撥入家庭緊急備用金或穩健投資戶口。`;
+                adviceEl.textContent = `太棒了！本月儲蓄率達 ${savingsRate}%，高於建議的 20% 健康標準，家庭資產正穩健增長。`;
             } else {
-                adviceEl.textContent = `目前收支保持平衡，固定居住開支佔收入 ${(totalIncome > 0 ? (totalFixed/totalIncome*100).toFixed(1) : 0)}%。持續共同記帳有助進一步提升儲蓄率！`;
+                adviceEl.textContent = `本月儲蓄率為 ${savingsRate}%，固定開支與生活開支佔比穩定，可持續留意日常額外開銷。`;
             }
+
+            renderTable();
+            updateCharts(totalIncome, totalExpense, creditExpense);
         }
 
-        window.renderTable = function() {
+        function renderTable() {
             const tbody = document.getElementById('reportTableBody');
+            const memberFilter = document.getElementById('memberFilterSelect').value;
             tbody.innerHTML = '';
 
-            const memberFilter = document.getElementById('memberFilterSelect').value;
-
-            const filtered = transactions.filter(t => {
-                const matchCategory = currentFilter === 'all' || t.category === currentFilter;
-                const matchMember = memberFilter === 'all' || (t.member || '家庭共同') === memberFilter;
-                return matchCategory && matchMember;
+            let filtered = transactions.filter(tx => {
+                if (currentFilter !== 'all' && tx.category !== currentFilter) return false;
+                if (memberFilter !== 'all' && (tx.member || '家庭共同') !== memberFilter) return false;
+                return true;
             });
 
             let subtotal = 0;
@@ -1133,7 +1075,7 @@
             if (filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="py-10 text-center text-slate-400">
+                        <td colspan="8" class="py-10 text-center text-slate-400">
                             <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
                             此篩選條件下暫無雲端記錄
                         </td>
@@ -1148,6 +1090,7 @@
                 const isIncome = tx.category === 'income';
                 const amt = Number(tx.amount) || 0;
                 const memberName = tx.member || '家庭共同';
+                const displayDate = tx.date || `${currentMonth}-01`;
                 
                 if (currentFilter === 'all') {
                     subtotal += isIncome ? amt : -amt;
@@ -1155,7 +1098,6 @@
                     subtotal += amt;
                 }
 
-                // 成員徽章顏色區分
                 let memberBadgeStyle = 'bg-slate-100 text-slate-700';
                 if (memberName === '戶主') memberBadgeStyle = 'bg-sky-100 text-sky-800';
                 else if (memberName === '太太') memberBadgeStyle = 'bg-pink-100 text-pink-800';
@@ -1164,6 +1106,9 @@
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50/90 transition group';
                 tr.innerHTML = `
+                    <td class="py-3.5 px-4 whitespace-nowrap font-mono text-xs font-medium text-slate-600">
+                        <i class="fa-regular fa-calendar text-slate-400 mr-1.5"></i>${escapeHTML(displayDate)}
+                    </td>
                     <td class="py-3.5 px-4 whitespace-nowrap">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${meta.badgeClass}">
                             <i class="fa-solid ${meta.icon} mr-1.5"></i>
@@ -1192,10 +1137,10 @@
                     </td>
                     <td class="py-3.5 px-4 text-center whitespace-nowrap no-print">
                         <div class="flex items-center justify-center space-x-1">
-                            <button onclick="openEditModal('${tx.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition" title="編輯項目">
+                            <button onclick="openEditModal('${tx.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition" title="編輯">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </button>
-                            <button onclick="deleteTransaction('${tx.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="刪除項目">
+                            <button onclick="deleteTransaction('${tx.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="刪除">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>
@@ -1204,48 +1149,27 @@
                 tbody.appendChild(tr);
             });
 
-            const subtotalEl = document.getElementById('tableSubtotal');
-            if (currentFilter === 'all') {
-                subtotalEl.textContent = (subtotal >= 0 ? '淨結餘 +' : '淨赤字 ') + formatCurrency(subtotal);
-                subtotalEl.className = `py-4 px-4 text-right text-base font-mono ${subtotal >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
-            } else {
-                subtotalEl.textContent = formatCurrency(subtotal);
-                subtotalEl.className = 'py-4 px-4 text-right text-base font-mono text-brand-700';
-            }
-        };
+            document.getElementById('tableSubtotal').textContent = formatCurrency(subtotal);
+        }
 
-        // ==========================================
-        // 6. Chart.js 視覺化圖表邏輯
-        // ==========================================
         function initCharts() {
             const ctxDoughnut = document.getElementById('expenseDoughnutChart').getContext('2d');
             doughnutChart = new Chart(ctxDoughnut, {
                 type: 'doughnut',
                 data: {
-                    labels: ['居住及固定開支', '信用卡還款', '生活及額外支出'],
+                    labels: ['固定開支', '信用卡還款', '生活額外'],
                     datasets: [{
                         data: [0, 0, 0],
-                        backgroundColor: ['#0ea5e9', '#f59e0b', '#8b5cf6'],
+                        backgroundColor: ['#0284c7', '#f43f5e', '#f59e0b'],
                         borderWidth: 2,
-                        borderColor: '#ffffff',
-                        hoverOffset: 4
+                        borderColor: '#ffffff'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '65%',
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { boxWidth: 12, font: { family: "'Noto Sans TC', sans-serif", size: 11 } }
-                        },
-                        title: {
-                            display: true,
-                            text: '三大支出類別佔比',
-                            font: { family: "'Noto Sans TC', sans-serif", size: 13, weight: 'bold' },
-                            color: '#334155'
-                        }
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Noto Sans TC', size: 11 } } }
                     }
                 }
             });
@@ -1254,109 +1178,71 @@
             barChart = new Chart(ctxBar, {
                 type: 'bar',
                 data: {
-                    labels: ['總收入', '固定開支', '信用卡', '生活額外'],
+                    labels: ['總收入', '總支出', '淨結餘'],
                     datasets: [{
                         label: '金額 (HKD)',
-                        data: [0, 0, 0, 0],
-                        backgroundColor: ['#10b981', '#0ea5e9', '#f59e0b', '#8b5cf6'],
-                        borderRadius: 6
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#ef4444', '#0ea5e9'],
+                        borderRadius: 8
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        title: {
-                            display: true,
-                            text: '收支項目金額對比 (HKD)',
-                            font: { family: "'Noto Sans TC', sans-serif", size: 13, weight: 'bold' },
-                            color: '#334155'
-                        }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-                        x: { ticks: { font: { family: "'Noto Sans TC', sans-serif", size: 11 } }, grid: { display: false } }
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
                     }
                 }
             });
         }
 
-        function updateCharts() {
-            if (!doughnutChart || !barChart) return;
+        function updateCharts(totalIncome, totalExpense, creditExpense) {
+            let fixedTotal = 0;
+            let extraTotal = 0;
 
-            let income = 0, fixed = 0, credit = 0, extra = 0;
             transactions.forEach(t => {
                 const amt = Number(t.amount) || 0;
-                if (t.category === 'income') income += amt;
-                else if (t.category === 'fixed') fixed += amt;
-                else if (t.category === 'credit') credit += amt;
-                else if (t.category === 'extra') extra += amt;
+                if (t.category === 'fixed') fixedTotal += amt;
+                if (t.category === 'extra') extraTotal += amt;
             });
 
-            doughnutChart.data.datasets[0].data = [fixed, credit, extra];
-            doughnutChart.update();
+            if (doughnutChart) {
+                doughnutChart.data.datasets[0].data = [fixedTotal, creditExpense, extraTotal];
+                doughnutChart.update();
+            }
 
-            barChart.data.datasets[0].data = [income, fixed, credit, extra];
-            barChart.update();
+            if (barChart) {
+                barChart.data.datasets[0].data = [totalIncome, totalExpense, totalIncome - totalExpense];
+                barChart.update();
+            }
         }
 
-        // ==========================================
-        // 7. 匯出 CSV 與工具函數
-        // ==========================================
-        window.exportToCSV = function() {
-            let csvContent = "\uFEFF";
-            csvContent += `家庭收支平衡表 (${currentFamilyCode} - ${currentMonth})\n`;
-            csvContent += "分類,記帳成員,項目名稱,備註說明,繳費狀態,收支方向,金額(HKD)\n";
+        function formatCurrency(num) {
+            return '$' + Number(num).toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
 
-            transactions.forEach(tx => {
-                const catName = (categoryMeta[tx.category] || categoryMeta.extra).label;
-                const member = tx.member || '家庭共同';
-                const status = tx.paid ? "已繳付/已入帳" : "待繳付";
-                const direction = tx.category === 'income' ? "收入" : "支出";
-                const safeName = `"${tx.name.replace(/"/g, '""')}"`;
-                const safeNote = `"${(tx.note || '').replace(/"/g, '""')}"`;
-                csvContent += `${catName},${member},${safeName},${safeNote},${status},${direction},${tx.amount}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `家庭收支平衡表_${currentFamilyCode}_${currentMonth}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showToast('雲端報表已成功匯出為 CSV 檔案！');
-        };
-
-        function updateCloudStatus(state, text) {
-            const badge = document.getElementById('cloudStatusBadge');
-            if (state === 'connected') {
-                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800';
-                badge.innerHTML = `<i class="fa-solid fa-cloud-check mr-1"></i> ${text}`;
-            } else if (state === 'local') {
-                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800';
-                badge.innerHTML = `<i class="fa-solid fa-laptop-file mr-1"></i> ${text}`;
-            } else if (state === 'syncing') {
-                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800';
-                badge.innerHTML = `<i class="fa-solid fa-rotate fa-spin mr-1"></i> ${text}`;
-            } else {
-                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800';
-                badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> ${text}`;
-            }
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toastNotification');
-            const icon = document.getElementById('toastIcon');
             const msg = document.getElementById('toastMessage');
+            const icon = document.getElementById('toastIcon');
 
             msg.textContent = message;
-            if (type === 'error') icon.className = 'fa-solid fa-circle-exclamation text-rose-400';
-            else if (type === 'warning') icon.className = 'fa-solid fa-trash-can text-amber-400';
-            else icon.className = 'fa-solid fa-circle-check text-emerald-400';
+            if (type === 'error') {
+                icon.className = 'fa-solid fa-circle-exclamation text-rose-400';
+            } else {
+                icon.className = 'fa-solid fa-circle-check text-emerald-400';
+            }
 
             toast.classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => {
@@ -1364,50 +1250,61 @@
             }, 3000);
         }
 
-        function escapeHTML(str) {
-            return String(str).replace(/[&<>'"]/g, 
-                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-            );
-        }
+        window.exportToCSV = function() {
+            let csvContent = "\uFEFF";
+            csvContent += `家庭收支平衡表 (${currentFamilyCode} - ${currentMonth})\n`;
+            csvContent += "記賬日期,分類,記帳成員,項目名稱,備註說明,繳費狀態,收支方向,金額(HKD)\n";
 
-        // ==========================================
-        // 8. 頁面載入啟動流程
-        // ==========================================
-        function bootApp() {
+            transactions.forEach(tx => {
+                const dateStr = tx.date || `${currentMonth}-01`;
+                const catName = (categoryMeta[tx.category] || categoryMeta.extra).label;
+                const member = tx.member || '家庭共同';
+                const status = tx.paid ? "已繳付/已入帳" : "待繳付";
+                const direction = tx.category === 'income' ? "收入" : "支出";
+                const safeName = `"${tx.name.replace(/"/g, '""')}"`;
+                const safeNote = `"${(tx.note || '').replace(/"/g, '""')}"`;
+                csvContent += `${dateStr},${catName},${member},${safeName},${safeNote},${status},${direction},${tx.amount}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `LokFu_Budget_${currentFamilyCode}_${currentMonth}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('CSV 報表已成功匯出！');
+        };
+
+        window.onload = function() {
+            document.getElementById('txDate').value = getDefaultDateForMonth(currentMonth);
             window.updateCategoryOptions();
             initCharts();
             initAuthAndCloud();
 
-            // 額外綁定右上角家庭帳本按鈕事件確保萬無一失
             const openFamilyBtn = document.getElementById('openFamilyBtn');
             if (openFamilyBtn) {
                 openFamilyBtn.addEventListener('click', window.openFamilyModal);
             }
 
-            // 監聽月份切換：即時載入該月份歷史記錄
             document.getElementById('monthSelector').addEventListener('change', function(e) {
                 currentMonth = e.target.value;
+                document.getElementById('txDate').value = getDefaultDateForMonth(currentMonth);
                 loadTransactions();
             });
 
-            // 監聽新增表單提交
-            document.getElementById('transactionForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                addTransactionToCloud();
-            });
-
-            // 監聽編輯表單提交
-            document.getElementById('editForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveEditTransactionToCloud();
-            });
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', bootApp);
-        } else {
-            bootApp();
-        }
+            document.getElementById('transactionForm').addEventListener('submit', addTransactionToCloud);
+            document.getElementById('editForm').addEventListener('submit', saveEditTransactionToCloud);
+            
+            const savedMember = localStorage.getItem('LOKFU_DEFAULT_MEMBER');
+            if (savedMember) {
+                const defSelect = document.getElementById('defaultMemberSelect');
+                if (defSelect) defSelect.value = savedMember;
+                const txMember = document.getElementById('txMember');
+                if (txMember) txMember.value = savedMember;
+            }
+        };
     </script>
 </body>
 </html>
