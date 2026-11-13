@@ -488,12 +488,23 @@
         import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
-        // 1. 初始化 Firebase 與環境變數 (支援 GitHub 獨立部署)
+        // 1. 初始化 Firebase 與環境變數 (已內建您的專屬專案設定)
         // ==========================================
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'lokfu-family-budget-github';
         
-        // 讀取環境變數或使用者在 GitHub 上自行設定的 Firebase Config
-        let firebaseConfig = null;
+        // 預設內建您的 Firebase 專案設定，上傳 GitHub 即開即用
+        const defaultUserFirebaseConfig = {
+            apiKey: "AIzaSyAznRnXYw9TX71wItdOZU2gjiPpVebctTA",
+            authDomain: "kenny-eba2d.firebaseapp.com",
+            projectId: "kenny-eba2d",
+            storageBucket: "kenny-eba2d.firebasestorage.app",
+            messagingSenderId: "959278138365",
+            appId: "1:959278138365:web:4de5e8b020443e5a180f94",
+            measurementId: "G-3H6KF3KXWS"
+        };
+
+        // 讀取環境變數、手動覆蓋設定，或預設使用上述內建設定
+        let firebaseConfig = defaultUserFirebaseConfig;
         const savedCustomConfig = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG');
         
         if (typeof __firebase_config !== 'undefined' && __firebase_config) {
