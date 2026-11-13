@@ -69,7 +69,7 @@
             
             <div class="flex items-center space-x-2 sm:space-x-3 no-print">
                 <!-- 家庭共享帳本設定按鈕 -->
-                <button onclick="openFamilyModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm">
+                <button id="openFamilyBtn" type="button" onclick="if(window.openFamilyModal) window.openFamilyModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
                     <i class="fa-solid fa-users"></i>
                     <span id="currentFamilyDisplay">樂富家庭帳本</span>
                 </button>
@@ -409,9 +409,9 @@
                         <span id="cloudModeHint" class="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">檢測中</span>
                     </div>
                     <p class="text-[11px] text-slate-500 mb-2 leading-relaxed">
-                        若將此網頁放上 GitHub，未填寫時會自動使用「本機儲存」；若需跨手機同步，請貼上您的 Firebase Config JSON：
+                        可直接從 Firebase 複製整段 <code class="bg-slate-100 px-1 rounded">firebaseConfig = { ... }</code> 貼上（免手動加雙引號）：
                     </p>
-                    <textarea id="customFirebaseConfigInput" rows="3" placeholder='{"apiKey": "AIza...", "authDomain": "...", "projectId": "..."}' 
+                    <textarea id="customFirebaseConfigInput" rows="3" placeholder='貼上 Firebase 複製的設定碼，例如：{ apiKey: "AIza...", projectId: "..." }' 
                         class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-[11px] font-mono focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                 </div>
 
@@ -907,18 +907,47 @@
         // 4. 家庭共享帳本設定與切換邏輯
         // ==========================================
         window.openFamilyModal = function() {
-            document.getElementById('familyIdInput').value = currentFamilyCode;
-            document.getElementById('customFirebaseConfigInput').value = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG') || '';
+            const familyInput = document.getElementById('familyIdInput');
+            const configInput = document.getElementById('customFirebaseConfigInput');
             const modal = document.getElementById('familyModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            
+            if (familyInput) familyInput.value = currentFamilyCode;
+            if (configInput) configInput.value = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG') || '';
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
         };
 
         window.closeFamilyModal = function() {
             const modal = document.getElementById('familyModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         };
+
+        // 智能解析 Firebase 設定（支援原生 JS 物件或 JSON 字串）
+        function parseFlexibleFirebaseConfig(rawText) {
+            let text = rawText.trim();
+            // 移除 const firebaseConfig = 或類似前綴與結尾分號
+            const braceStart = text.indexOf('{');
+            const braceEnd = text.lastIndexOf('}');
+            if (braceStart !== -1 && braceEnd !== -1 && braceEnd > braceStart) {
+                text = text.substring(braceStart, braceEnd + 1);
+            }
+            // 先嘗試標準 JSON 解析
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                // 自動為未加引號的 key 補上雙引號，並將單引號轉為雙引號
+                const fixedJson = text
+                    .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":')
+                    .replace(/:\s*'([^']*)'/g, ': "$1"')
+                    .replace(/,\s*}/g, '}');
+                return JSON.parse(fixedJson);
+            }
+        }
 
         window.switchFamilyAccount = function() {
             const rawCode = document.getElementById('familyIdInput').value.trim().toUpperCase();
@@ -941,19 +970,19 @@
                     localStorage.removeItem('LOKFU_CUSTOM_FIREBASE_CONFIG');
                 } else {
                     try {
-                        const parsed = JSON.parse(customConfigText);
-                        if (!parsed.apiKey || !parsed.projectId) {
-                            showToast('Firebase Config 缺少 apiKey 或 projectId', 'error');
+                        const parsed = parseFlexibleFirebaseConfig(customConfigText);
+                        if (!parsed || !parsed.apiKey || !parsed.projectId) {
+                            showToast('設定碼缺少 apiKey 或 projectId，請檢查複製內容', 'error');
                             return;
                         }
-                        localStorage.setItem('LOKFU_CUSTOM_FIREBASE_CONFIG', customConfigText);
+                        localStorage.setItem('LOKFU_CUSTOM_FIREBASE_CONFIG', JSON.stringify(parsed));
                     } catch (e) {
-                        showToast('Firebase Config 格式錯誤，請貼上正確的 JSON 物件', 'error');
+                        showToast('設定碼格式無法辨識，請確認包含完整大括號 { ... }', 'error');
                         return;
                     }
                 }
                 localStorage.setItem('LOKFU_FAMILY_CODE', cleanCode);
-                showToast('雲端設定已更新，正在重新連線...');
+                showToast('雲端設定已儲存，正在重新連線...');
                 setTimeout(() => location.reload(), 800);
                 return;
             }
@@ -1333,10 +1362,16 @@
         // ==========================================
         // 8. 頁面載入啟動流程
         // ==========================================
-        window.onload = function() {
+        function bootApp() {
             window.updateCategoryOptions();
             initCharts();
             initAuthAndCloud();
+
+            // 額外綁定右上角家庭帳本按鈕事件確保萬無一失
+            const openFamilyBtn = document.getElementById('openFamilyBtn');
+            if (openFamilyBtn) {
+                openFamilyBtn.addEventListener('click', window.openFamilyModal);
+            }
 
             // 監聽月份切換：即時載入該月份歷史記錄
             document.getElementById('monthSelector').addEventListener('change', function(e) {
@@ -1355,7 +1390,13 @@
                 e.preventDefault();
                 saveEditTransactionToCloud();
             });
-        };
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootApp);
+        } else {
+            bootApp();
+        }
     </script>
 </body>
 </html>
