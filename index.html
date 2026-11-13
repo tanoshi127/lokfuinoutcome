@@ -728,8 +728,12 @@
                 updateEmptyBanner();
                 renderApp();
             }, (error) => {
-                console.error("監聽失敗:", error);
-                loadFromLocalStorage();
+                console.warn("Firestore 權限不足或規則未設定，已安全切換至本機快取同步模式:", error);
+                if (isCloudMode) {
+                    isCloudMode = false;
+                    updateCloudStatus('local', '本機雲端模式 (權限不足，自動轉為本機儲存)');
+                    loadFromLocalStorage();
+                }
             });
         }
 
