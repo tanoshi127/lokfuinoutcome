@@ -400,15 +400,30 @@
                     </select>
                 </div>
 
+                <!-- GitHub 外部部署專用：自訂雲端設定區 -->
+                <div class="pt-2 border-t border-slate-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold text-slate-700">
+                            <i class="fa-solid fa-cloud text-brand-600 mr-1"></i> 外部部署雲端金鑰 (GitHub 專用)
+                        </label>
+                        <span id="cloudModeHint" class="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">檢測中</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mb-2 leading-relaxed">
+                        若將此網頁放上 GitHub，未填寫時會自動使用「本機儲存」；若需跨手機同步，請貼上您的 Firebase Config JSON：
+                    </p>
+                    <textarea id="customFirebaseConfigInput" rows="3" placeholder='{"apiKey": "AIza...", "authDomain": "...", "projectId": "..."}' 
+                        class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-[11px] font-mono focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-500">
-                    <span class="font-bold text-slate-700">雲端連線裝置識別碼：</span>
+                    <span class="font-bold text-slate-700">連線狀態 / 裝置識別碼：</span>
                     <span id="displayUserId" class="font-mono break-all">連線中...</span>
                 </div>
 
                 <div class="flex justify-end space-x-2 pt-2">
                     <button type="button" onclick="closeFamilyModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">關閉</button>
                     <button type="button" onclick="switchFamilyAccount()" class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm">
-                        切換 / 儲存帳本設定
+                        儲存並套用設定
                     </button>
                 </div>
             </div>
@@ -473,18 +488,40 @@
         import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
-        // 1. 初始化 Firebase 與環境變數
+        // 1. 初始化 Firebase 與環境變數 (支援 GitHub 獨立部署)
         // ==========================================
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'lokfu-family-budget-github';
         
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // 讀取環境變數或使用者在 GitHub 上自行設定的 Firebase Config
+        let firebaseConfig = null;
+        const savedCustomConfig = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG');
+        
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            try { firebaseConfig = JSON.parse(__firebase_config); } catch (e) {}
+        } else if (savedCustomConfig) {
+            try { firebaseConfig = JSON.parse(savedCustomConfig); } catch (e) {}
+        }
+
+        let app = null;
+        let auth = null;
+        let db = null;
+        let isCloudMode = false;
+
+        if (firebaseConfig && firebaseConfig.apiKey) {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                isCloudMode = true;
+            } catch (e) {
+                console.error("Firebase 初始化失敗，切換至本機模式:", e);
+                isCloudMode = false;
+            }
+        }
 
         // 應用程式狀態變數
         let currentUser = null;
-        let currentFamilyCode = 'LOKFU_FAMILY'; // 預設樂富家庭共享帳本代碼
+        let currentFamilyCode = localStorage.getItem('LOKFU_FAMILY_CODE') || 'LOKFU_FAMILY';
         let currentMonth = '2026-11';
         let transactions = [];
         let currentFilter = 'all';
@@ -522,9 +559,19 @@
         };
 
         // ==========================================
-        // 2. 身份驗證與雲端即時監聽 (Rule 1, 2, 3)
+        // 2. 身份驗證與雲端/本機雙模式啟動
         // ==========================================
         async function initAuthAndCloud() {
+            if (!isCloudMode) {
+                // GitHub 無雲端設定時，自動啟用「本機瀏覽器儲存模式」，避免卡在連線中
+                document.getElementById('displayUserId').textContent = '本機儲存模式 (未設定雲端金鑰)';
+                document.getElementById('cloudModeHint').textContent = '目前：本機儲存';
+                updateCloudStatus('local', '本機模式 (已儲存)');
+                loadTransactions();
+                return;
+            }
+
+            document.getElementById('cloudModeHint').textContent = '目前：雲端同步';
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -532,51 +579,100 @@
                     await signInAnonymously(auth);
                 }
             } catch (error) {
-                console.error("雲端驗證失敗:", error);
-                updateCloudStatus('error', '雲端連線異常');
+                console.error("雲端驗證失敗，降級為本機模式:", error);
+                isCloudMode = false;
+                updateCloudStatus('local', '本機模式 (雲端連線失敗)');
+                loadTransactions();
             }
         }
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('displayUserId').textContent = user.uid;
-                updateCloudStatus('connected', '雲端已即時同步');
-                subscribeToCloudTransactions();
+        if (isCloudMode && auth) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('displayUserId').textContent = user.uid;
+                    updateCloudStatus('connected', '雲端已即時同步');
+                    loadTransactions();
+                }
+            });
+        }
+
+        // 統一資料載入入口 (自動分流雲端或本機)
+        function loadTransactions() {
+            document.getElementById('reportMonthBadge').textContent = currentMonth;
+            document.getElementById('currentFamilyDisplay').textContent = currentFamilyCode;
+
+            if (!isCloudMode) {
+                loadFromLocalStorage();
+                return;
             }
-        });
+            subscribeToCloudTransactions();
+        }
+
+        // 本機儲存讀取邏輯 (GitHub 預設保底)
+        function loadFromLocalStorage() {
+            const storageKey = `BUDGET_${currentFamilyCode}_${currentMonth}`;
+            const raw = localStorage.getItem(storageKey);
+            let data = raw ? JSON.parse(raw) : [];
+
+            if (data.length === 0 && currentFamilyCode === 'LOKFU_FAMILY' && currentMonth === '2026-11' && !localStorage.getItem('LOKFU_SEEDED_2026_11')) {
+                data = defaultTemplateItems.map((item, idx) => ({
+                    ...item,
+                    id: 'local_' + Date.now() + '_' + idx,
+                    familyCode: currentFamilyCode,
+                    month: currentMonth,
+                    createdAt: Date.now() - idx * 1000
+                }));
+                localStorage.setItem(storageKey, JSON.stringify(data));
+                localStorage.setItem('LOKFU_SEEDED_2026_11', 'true');
+            }
+
+            transactions = data;
+            updateEmptyBanner();
+            renderApp();
+        }
+
+        function saveToLocalStorage() {
+            const storageKey = `BUDGET_${currentFamilyCode}_${currentMonth}`;
+            localStorage.setItem(storageKey, JSON.stringify(transactions));
+            updateEmptyBanner();
+            renderApp();
+        }
+
+        function updateEmptyBanner() {
+            const emptyBanner = document.getElementById('emptyMonthBanner');
+            if (transactions.length === 0) {
+                document.getElementById('emptyMonthLabel').textContent = currentMonth;
+                emptyBanner.classList.remove('hidden');
+            } else {
+                emptyBanner.classList.add('hidden');
+            }
+        }
 
         // 監聽指定「家庭代碼」與「月份」的雲端資料
         function subscribeToCloudTransactions() {
-            if (!currentUser) return;
+            if (!currentUser || !db) return;
 
             if (unsubscribeSnapshot) {
                 unsubscribeSnapshot();
             }
 
             updateCloudStatus('syncing', '讀取雲端帳目...');
-            document.getElementById('reportMonthBadge').textContent = currentMonth;
-            document.getElementById('currentFamilyDisplay').textContent = currentFamilyCode;
 
-            // 遵循 Rule 1: 嚴格使用 /artifacts/{appId}/public/data/{collectionName}
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'family_budget_records');
 
-            // 遵循 Rule 2: 單純查詢集合，於前端記憶體內過濾 familyCode 與 month
             unsubscribeSnapshot = onSnapshot(colRef, async (snapshot) => {
                 const allDocs = [];
                 snapshot.forEach((docSnap) => {
                     allDocs.push({ id: docSnap.id, ...docSnap.data() });
                 });
 
-                // 篩選屬於目前家庭代碼與目前選擇月份的記錄
                 const filteredDocs = allDocs.filter(item => 
                     item.familyCode === currentFamilyCode && item.month === currentMonth
                 );
 
-                // 按建立時間排序 (新到舊)
                 filteredDocs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-                // 若是預設帳本且預設月份完全無資料，自動初始化樂富範例數據方便體驗
                 if (filteredDocs.length === 0 && currentFamilyCode === 'LOKFU_FAMILY' && currentMonth === '2026-11' && isInitialLoadForDefaultMonth) {
                     isInitialLoadForDefaultMonth = false;
                     await seedDefaultDataToCloud();
@@ -586,27 +682,31 @@
                 isInitialLoadForDefaultMonth = false;
                 transactions = filteredDocs;
                 updateCloudStatus('connected', '雲端已即時同步');
-                
-                // 控制空月份提示橫幅
-                const emptyBanner = document.getElementById('emptyMonthBanner');
-                if (transactions.length === 0) {
-                    document.getElementById('emptyMonthLabel').textContent = currentMonth;
-                    emptyBanner.classList.remove('hidden');
-                } else {
-                    emptyBanner.classList.add('hidden');
-                }
-
+                updateEmptyBanner();
                 renderApp();
             }, (error) => {
                 console.error("讀取雲端數據失敗:", error);
-                updateCloudStatus('error', '同步失敗，請重試');
-                showToast('雲端同步發生錯誤，請檢查網絡連線', 'error');
+                updateCloudStatus('error', '同步失敗，請檢查設定');
+                showToast('雲端同步發生錯誤，請檢查 Firebase 設定或權限', 'error');
             });
         }
 
-        // 批次寫入預設範本到雲端
+        // 批次寫入預設範本
         async function seedDefaultDataToCloud() {
-            if (!currentUser) return;
+            if (!isCloudMode) {
+                transactions = defaultTemplateItems.map((item, idx) => ({
+                    ...item,
+                    id: 'local_' + Date.now() + '_' + idx,
+                    familyCode: currentFamilyCode,
+                    month: currentMonth,
+                    createdAt: Date.now() - idx * 1000
+                }));
+                saveToLocalStorage();
+                showToast(`已為 ${currentMonth} 載入樂富家庭範本！`);
+                return;
+            }
+
+            if (!currentUser || !db) return;
             updateCloudStatus('syncing', '初始化雲端範本...');
             try {
                 const batch = writeBatch(db);
@@ -633,18 +733,13 @@
         }
 
         // ==========================================
-        // 3. 雲端 CRUD 操作函數 (掛載至 window 供 HTML 呼叫)
+        // 3. CRUD 操作函數 (自動支援雲端與本機)
         // ==========================================
         window.loadTemplateForCurrentMonth = async function() {
             await seedDefaultDataToCloud();
         };
 
         async function addTransactionToCloud() {
-            if (!currentUser) {
-                showToast('雲端尚未連線完成，請稍候', 'error');
-                return;
-            }
-
             const category = document.getElementById('txCategory').value;
             const member = document.getElementById('txMember').value;
             const name = document.getElementById('txName').value.trim();
@@ -657,6 +752,27 @@
                 return;
             }
 
+            if (!isCloudMode) {
+                transactions.unshift({
+                    id: 'local_' + Date.now(),
+                    familyCode: currentFamilyCode,
+                    month: currentMonth,
+                    category, member, name, amount, note, paid,
+                    createdAt: Date.now()
+                });
+                saveToLocalStorage();
+                document.getElementById('transactionForm').reset();
+                document.getElementById('txMember').value = document.getElementById('defaultMemberSelect').value;
+                window.updateCategoryOptions();
+                showToast(`已新增「${name}」並儲存於本機！`);
+                return;
+            }
+
+            if (!currentUser || !db) {
+                showToast('雲端尚未連線完成，請稍候', 'error');
+                return;
+            }
+
             const submitBtn = document.getElementById('submitTxBtn');
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>儲存中...</span>';
@@ -666,18 +782,12 @@
                 await addDoc(colRef, {
                     familyCode: currentFamilyCode,
                     month: currentMonth,
-                    category,
-                    member,
-                    name,
-                    amount,
-                    note,
-                    paid,
+                    category, member, name, amount, note, paid,
                     createdAt: Date.now(),
                     updatedBy: currentUser.uid
                 });
 
                 document.getElementById('transactionForm').reset();
-                // 恢復預設選取的記帳身份
                 document.getElementById('txMember').value = document.getElementById('defaultMemberSelect').value;
                 window.updateCategoryOptions();
                 showToast(`已新增「${name}」並同步給所有家庭成員！`);
@@ -691,8 +801,15 @@
         }
 
         window.deleteTransaction = async function(id) {
-            if (!currentUser) return;
             const target = transactions.find(t => t.id === id);
+            if (!isCloudMode) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveToLocalStorage();
+                showToast(`已刪除「${target ? target.name : ''}」`, 'warning');
+                return;
+            }
+
+            if (!currentUser || !db) return;
             try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
                 await deleteDoc(docRef);
@@ -704,10 +821,17 @@
         };
 
         window.togglePaidStatus = async function(id) {
-            if (!currentUser) return;
             const tx = transactions.find(t => t.id === id);
             if (!tx) return;
 
+            if (!isCloudMode) {
+                tx.paid = !tx.paid;
+                saveToLocalStorage();
+                showToast(`已更新「${tx.name}」為${tx.paid ? '已繳付' : '待繳付'}`);
+                return;
+            }
+
+            if (!currentUser || !db) return;
             try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
                 await updateDoc(docRef, {
@@ -744,16 +868,31 @@
         };
 
         async function saveEditTransactionToCloud() {
-            if (!currentUser) return;
             const id = document.getElementById('editId').value;
+            const updatedFields = {
+                category: document.getElementById('editCategory').value,
+                member: document.getElementById('editMember').value,
+                name: document.getElementById('editName').value.trim(),
+                amount: parseFloat(document.getElementById('editAmount').value) || 0,
+                note: document.getElementById('editNote').value.trim() || '-'
+            };
+
+            if (!isCloudMode) {
+                const idx = transactions.findIndex(t => t.id === id);
+                if (idx !== -1) {
+                    transactions[idx] = { ...transactions[idx], ...updatedFields };
+                    saveToLocalStorage();
+                }
+                window.closeEditModal();
+                showToast('修改已儲存！');
+                return;
+            }
+
+            if (!currentUser || !db) return;
             try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_budget_records', id);
                 await updateDoc(docRef, {
-                    category: document.getElementById('editCategory').value,
-                    member: document.getElementById('editMember').value,
-                    name: document.getElementById('editName').value.trim(),
-                    amount: parseFloat(document.getElementById('editAmount').value) || 0,
-                    note: document.getElementById('editNote').value.trim() || '-',
+                    ...updatedFields,
                     updatedBy: currentUser.uid
                 });
                 window.closeEditModal();
@@ -769,6 +908,7 @@
         // ==========================================
         window.openFamilyModal = function() {
             document.getElementById('familyIdInput').value = currentFamilyCode;
+            document.getElementById('customFirebaseConfigInput').value = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG') || '';
             const modal = document.getElementById('familyModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -786,19 +926,45 @@
                 showToast('請輸入有效的家庭帳本代碼', 'error');
                 return;
             }
-            // 僅允許英數字與底線
             const cleanCode = rawCode.replace(/[^A-Z0-9_-]/g, '');
             if (!cleanCode) {
                 showToast('代碼請使用英文字母或數字', 'error');
                 return;
             }
 
+            // 檢查是否有更新自訂 Firebase Config (針對 GitHub 部署)
+            const customConfigText = document.getElementById('customFirebaseConfigInput').value.trim();
+            const previousConfig = localStorage.getItem('LOKFU_CUSTOM_FIREBASE_CONFIG') || '';
+            
+            if (customConfigText !== previousConfig) {
+                if (customConfigText === '') {
+                    localStorage.removeItem('LOKFU_CUSTOM_FIREBASE_CONFIG');
+                } else {
+                    try {
+                        const parsed = JSON.parse(customConfigText);
+                        if (!parsed.apiKey || !parsed.projectId) {
+                            showToast('Firebase Config 缺少 apiKey 或 projectId', 'error');
+                            return;
+                        }
+                        localStorage.setItem('LOKFU_CUSTOM_FIREBASE_CONFIG', customConfigText);
+                    } catch (e) {
+                        showToast('Firebase Config 格式錯誤，請貼上正確的 JSON 物件', 'error');
+                        return;
+                    }
+                }
+                localStorage.setItem('LOKFU_FAMILY_CODE', cleanCode);
+                showToast('雲端設定已更新，正在重新連線...');
+                setTimeout(() => location.reload(), 800);
+                return;
+            }
+
             currentFamilyCode = cleanCode;
+            localStorage.setItem('LOKFU_FAMILY_CODE', cleanCode);
             const defaultMember = document.getElementById('defaultMemberSelect').value;
             document.getElementById('txMember').value = defaultMember;
 
             window.closeFamilyModal();
-            subscribeToCloudTransactions();
+            loadTransactions();
             showToast(`已切換至家庭帳本：${currentFamilyCode}`);
         };
 
@@ -1130,6 +1296,9 @@
             if (state === 'connected') {
                 badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800';
                 badge.innerHTML = `<i class="fa-solid fa-cloud-check mr-1"></i> ${text}`;
+            } else if (state === 'local') {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800';
+                badge.innerHTML = `<i class="fa-solid fa-laptop-file mr-1"></i> ${text}`;
             } else if (state === 'syncing') {
                 badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800';
                 badge.innerHTML = `<i class="fa-solid fa-rotate fa-spin mr-1"></i> ${text}`;
@@ -1169,10 +1338,10 @@
             initCharts();
             initAuthAndCloud();
 
-            // 監聽月份切換：即時從雲端載入該月份歷史記錄
+            // 監聽月份切換：即時載入該月份歷史記錄
             document.getElementById('monthSelector').addEventListener('change', function(e) {
                 currentMonth = e.target.value;
-                subscribeToCloudTransactions();
+                loadTransactions();
             });
 
             // 監聽新增表單提交
